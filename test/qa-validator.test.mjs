@@ -68,9 +68,10 @@ test("QA validator reports archive contents and metadata-only visual checks", as
       output: "zip",
       qa: {
         profile: "social-pack",
-        expectedFormat: "zip",
         expectedArchive: true,
-        expectedMinOutputs: 4,
+        expectedOutputKind: "zip",
+        allowedFormats: ["webp"],
+        expectedMinOutputs: 3,
       },
     },
   };
@@ -124,4 +125,38 @@ test("QA validator warns when ZIP output details are incomplete", () => {
   assert.ok(report.checks.some((check) => check.name === "zip_entries_manifested" && !check.ok));
   assert.ok(report.checks.some((check) => check.name === "zip_entry_sizes_available" && !check.ok));
   assert.ok(report.checks.some((check) => check.name === "zip_entry_dimensions_available" && !check.ok));
+});
+
+test("QA validator checks output kind and required output names", () => {
+  const recipe = {
+    id: "profile_avatar_pack",
+    requires: { maxFiles: 1 },
+    expectedResult: {
+      output: "zip",
+      qa: {
+        profile: "profile-avatar",
+        expectedOutputKind: "zip",
+        allowedFormats: ["webp"],
+        requiredOutputNameIncludes: ["avatar_512x512", "avatar_256x256", "avatar_128x128"],
+      },
+    },
+  };
+  const report = validateResultManifest(
+    {
+      status: "done",
+      source: { count: 1, totalBytes: 2048 },
+      output: { kind: "zip", name: "avatars.zip", type: "application/zip", size: 52000 },
+      outputs: [
+        { outputName: "logo_avatar_512x512.webp", outputWidth: 512, outputHeight: 512, format: "webp", sizeBytes: 12_000 },
+        { outputName: "logo_avatar_256x256.webp", outputWidth: 256, outputHeight: 256, format: "webp", sizeBytes: 8_000 },
+        { outputName: "logo_avatar_128x128.webp", outputWidth: 128, outputHeight: 128, format: "webp", sizeBytes: 4_000 },
+      ],
+      warnings: [],
+    },
+    recipe,
+  );
+
+  assert.equal(report.ok, true);
+  assert.ok(report.checks.some((check) => check.name === "expected_output_kind" && check.ok));
+  assert.ok(report.checks.some((check) => check.name === "output_name_includes_avatar_512x512" && check.ok));
 });

@@ -13,9 +13,11 @@ import { parseArgs } from "../src/cli.mjs";
 
 test("MCP runner reads official QuokkaPix recipe catalog", async () => {
   const recipes = await listRecipes();
-  assert.ok(recipes.length >= 8);
+  assert.ok(recipes.length >= 12);
   assert.ok(recipes.some((recipe) => recipe.id === "shopify_product_pack"));
   assert.ok(recipes.some((recipe) => recipe.id === "website_webp_compress"));
+  assert.ok(recipes.some((recipe) => recipe.id === "white_background_shadow_batch"));
+  assert.ok(recipes.some((recipe) => recipe.id === "images_to_pdf_batch"));
 });
 
 test("MCP runner loads and validates a recipe by id", async () => {
@@ -28,6 +30,10 @@ test("MCP runner loads and validates a recipe by id", async () => {
   const resolved = await resolveRecipe("metadata_clean_batch");
   assert.equal(resolved.validation.valid, true);
   assert.equal(resolved.recipe.applySettings.tool, "metadata");
+
+  const avatar = await getRecipe("profile_avatar_pack");
+  assert.equal(avatar.applySettings.readyScenario, "avatar-pack");
+  assert.equal(validateRecipe(avatar).valid, true);
 });
 
 test("MCP runner rejects invalid custom recipes", () => {

@@ -72,11 +72,10 @@ export async function processImagesWithQuokkaPix({
     await page.locator('[data-agent="file-picker"]').setInputFiles(files);
     await page.locator('.page-shell[data-agent-status="ready"]').waitFor({ timeout: timeoutMs });
 
-    const downloadPromise = page.waitForEvent("download", { timeout: timeoutMs });
     await page.evaluate(() => window.QuokkaPixAgent.start());
     await page
       .locator(
-        '.page-shell[data-agent-status="done"], .page-shell[data-agent-status="error"], .page-shell[data-agent-status="cancelled"]',
+        '.page-shell[data-agent-status="done"], .page-shell[data-agent-status="error"], .page-shell[data-agent-status="cancelled"], .page-shell[data-agent-status="blocked"]',
       )
       .waitFor({ timeout: timeoutMs });
 
@@ -90,11 +89,18 @@ export async function processImagesWithQuokkaPix({
         '[data-agent="download-link"][data-status="ready"], [data-agent="zip-download-link"][data-status="ready"]',
       )
       .first();
-    await downloadLink.click();
-    const download = await downloadPromise;
-    const outputName = sanitizeFileName(download.suggestedFilename() || `${workflow.id || "quokkapix"}-output`);
+    const fallbackHref = (await downloadLink.getAttribute("href")) || "";
+    const fallbackName = (await downloadLink.getAttribute("download")) || "";
+    const outputName = sanitizeFileName(fallbackName || `${workflow.id || "quokkapix"}-output`);
     const outputPath = path.join(resolvedOutputDir, outputName);
-    await download.saveAs(outputPath);
+    if (fallbackHref.startsWith("blob:") || fallbackHref.startsWith("data:")) {
+      await saveHrefFromPage({ page, href: fallbackHref, outputPath });
+    } else {
+      const downloadPromise = page.waitForEvent("download", { timeout: timeoutMs });
+      await downloadLink.click();
+      const download = await downloadPromise;
+      await download.saveAs(outputPath);
+    }
 
     const manifest = await page.evaluate(() => window.QuokkaPixAgent.getResultManifest());
     const manifestPath = path.join(resolvedOutputDir, "quokkapix-result.json");
@@ -213,6 +219,21 @@ function sanitizeFileName(name) {
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
     .replace(/^\.+$/, "quokkapix-output")
     .slice(0, 180);
+}
+
+async function saveHrefFromPage({ page, href, outputPath }) {
+  if (!href) {
+    throw new Error("Download link href is missing.");
+  }
+  const payload = await page.evaluate(async (downloadHref) => {
+    const response = await fetch(downloadHref);
+    if (!response.ok) {
+      throw new Error(`Download fetch failed: ${response.status}`);
+    }
+    const buffer = await response.arrayBuffer();
+    return Array.from(new Uint8Array(buffer));
+  }, href);
+  await fs.writeFile(outputPath, Buffer.from(payload));
 }
 
 function sanitizeWorkflowId(value) {

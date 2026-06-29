@@ -230,8 +230,12 @@ Current official recipes:
 | `amazon_white_background_pack` | Amazon-style white background product photos | batch | ZIP |
 | `google_merchant_pack` | Google Merchant product images | batch | ZIP |
 | `website_webp_compress` | Website image compression to WebP | batch | ZIP |
+| `webp_compress_batch` | General WebP batch conversion and compression | batch | ZIP |
+| `white_background_shadow_batch` | White background product images with soft shadow | batch | ZIP |
 | `metadata_clean_batch` | Remove EXIF/GPS/camera/software metadata | batch | ZIP |
+| `images_to_pdf_batch` | Merge selected images or scans into one PDF | batch | PDF |
 | `social_pack_single` | Social media sizes from one image | single | ZIP |
+| `profile_avatar_pack` | Profile avatar sizes from one image | single | ZIP |
 | `watermark_product_batch` | Apply watermark to product images | batch | ZIP |
 | `favicon_app_icon_pack` | Generate favicon and app icon sizes | single | ZIP |
 
@@ -711,7 +715,10 @@ The package whitelist includes only:
 
 - `src/`;
 - `examples/`;
+- `CHANGELOG.md`;
+- `LICENSE`;
 - `README.md`;
+- `SECURITY.md`;
 - `package.json`.
 
 `node_modules`, test artifacts and the full QuokkaPix website are not included in the npm package.
