@@ -36,8 +36,8 @@
     "access": "public"
   },
   "bin": {
-    "quokkapix-mcp": "./src/server.mjs",
-    "quokkapix-runner": "./src/cli.mjs"
+    "quokkapix-mcp": "src/server.mjs",
+    "quokkapix-runner": "src/cli.mjs"
   },
   "scripts": {
     "check": "node --check src/server.mjs && node --check src/cli.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/qa-validator.mjs && node --check src/payment-tools.mjs && node --test test/*.test.mjs",
