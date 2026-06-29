@@ -8,6 +8,14 @@ It is designed for MCP-compatible local agents such as Claude Desktop, Cursor, L
 
 Repository: <https://github.com/quokkapix/quokkapix-mcp>
 
+npm package: <https://www.npmjs.com/package/quokkapix-mcp>
+
+Quick start:
+
+```bash
+npx quokkapix-mcp
+```
+
 ## What This Is
 
 This package is a local automation adapter around the browser app at:
