@@ -1,6 +1,6 @@
 {
   "name": "quokkapix-mcp",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": false,
   "type": "module",
   "description": "Local MCP adapter for QuokkaPix browser-only image workflows.",
