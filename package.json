@@ -1,0 +1,51 @@
+{
+  "name": "quokkapix-mcp",
+  "version": "0.2.1",
+  "private": false,
+  "type": "module",
+  "description": "Local MCP adapter for QuokkaPix browser-only image workflows.",
+  "license": "MIT",
+  "homepage": "https://quokkapix.com/mcp-runner.html",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/quokkapix/quokkapix-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/quokkapix/quokkapix-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "image-processing",
+    "browser-automation",
+    "playwright",
+    "local-first",
+    "ai-agents",
+    "quokkapix"
+  ],
+  "files": [
+    "src",
+    "examples",
+    "README.md",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "quokkapix-mcp": "./src/server.mjs",
+    "quokkapix-runner": "./src/cli.mjs"
+  },
+  "scripts": {
+    "check": "node --check src/server.mjs && node --check src/cli.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/qa-validator.mjs && node --check src/payment-tools.mjs && node --test test/*.test.mjs",
+    "test:e2e": "node --test test/*.e2e.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.1",
+    "playwright": "^1.61.0",
+    "zod": "^4.1.13"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

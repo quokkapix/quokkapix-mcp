@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "quokkapix": {
+      "command": "node",
+      "args": ["src/server.mjs"],
+      "cwd": "/absolute/path/to/quokkapix/mcp-runner",
+      "env": {
+        "QUOKKAPIX_APP_URL": "https://quokkapix.com/#agent=1"
+      }
+    }
+  }
+}
