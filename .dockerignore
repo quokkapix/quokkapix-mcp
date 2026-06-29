@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+*.tgz
+.git
+.github
+test
+test-results
+playwright-report
+coverage
+.env
+.env.*
