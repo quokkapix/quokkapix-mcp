@@ -14,7 +14,7 @@ import {
 
 const server = new McpServer({
   name: "quokkapix-mcp",
-  version: "0.3.1",
+  version: "0.3.2",
 });
 
 const localFilePathSchema = z
@@ -239,7 +239,7 @@ server.registerTool(
   {
     title: "Process local images with QuokkaPix",
     description:
-      "Process local image files through the QuokkaPix browser app using an official recipeId or a full custom recipe. The adapter opens local Chromium, applies settings, uploads files through the browser file input, starts processing, downloads the output and writes quokkapix-result.json. Source images stay in the local browser workflow and are not sent to a QuokkaPix processing API. Use unlockToken for paid batch/scenario runs.",
+      "Process local image files through the QuokkaPix browser app using an official recipeId or a full custom recipe. The adapter opens local Chromium, applies settings, uploads files through the browser file input, starts processing, downloads the output and writes quokkapix-result.json. Source images stay in the local browser workflow and are not sent to a QuokkaPix processing API. Single-image runs and small batches up to 5 files are free; use unlockToken for larger paid batch/scenario runs.",
     inputSchema: {
       recipeId: z
         .string()
@@ -250,7 +250,7 @@ server.registerTool(
       inputFiles: z
         .array(localFilePathSchema)
         .min(1)
-        .describe("Local source image files to upload through the browser file input. Maximum paid batch size is 50."),
+        .describe("Local source image files to upload through the browser file input. Agent batches up to 5 files are free; the paid batch limit is 50."),
       watermarkLogoFile: localFilePathSchema
         .optional()
         .describe("Optional local logo/image file for QuokkaPix logo watermark workflows."),
@@ -262,7 +262,7 @@ server.registerTool(
       unlockToken: z
         .string()
         .optional()
-        .describe("Optional x402 unlock token for paid agent batch/scenario runs. Obtain it outside this adapter."),
+        .describe("Optional x402 unlock token for paid agent batch/scenario runs above 5 files. Obtain it outside this adapter."),
       headless: z.boolean().optional().describe("Run Chromium headless. Defaults to true unless debugging."),
       timeoutMs: z
         .number()
@@ -312,7 +312,7 @@ server.registerTool(
       unlockToken: z
         .string()
         .optional()
-        .describe("Optional x402 unlock token for paid agent batch/scenario runs."),
+        .describe("Optional x402 unlock token for paid agent batch/scenario runs above 5 files."),
       headless: z.boolean().optional().describe("Run Chromium headless. Defaults to true unless debugging."),
       timeoutMs: z
         .number()
@@ -331,7 +331,7 @@ server.registerTool(
   {
     title: "Get QuokkaPix agent payment options",
     description:
-      "Fetch live QuokkaPix agent payment options. Use this before any paid batch/scenario run to discover current price, currency, free single-image rules, x402 endpoint URLs, verify endpoint and refund notes. This tool does not sign, submit or consume a payment.",
+      "Fetch live QuokkaPix agent payment options. Use this before any paid batch/scenario run to discover current price, currency, free single-image and small-batch rules, x402 endpoint URLs, verify endpoint and refund notes. This tool does not sign, submit or consume a payment.",
     inputSchema: {
       baseUrl: baseUrlSchema,
     },
@@ -344,7 +344,7 @@ server.registerTool(
   {
     title: "Explain QuokkaPix x402 payment flow",
     description:
-      "Explain the current QuokkaPix x402 workflow for agents. Use this when a client needs step-by-step guidance: get payment options, have an x402-capable wallet/client call the paid unlock endpoint, pass unlockToken to process_images/process_with_settings, optionally verify the token, then process. This adapter can use a token but cannot sign x402 payments itself.",
+      "Explain the current QuokkaPix x402 workflow for agents. Use this when a client needs step-by-step guidance for paid batches above the free limit: get payment options, have an x402-capable wallet/client call the paid unlock endpoint, pass unlockToken to process_images/process_with_settings, optionally verify the token, then process. This adapter can use a token but cannot sign x402 payments itself.",
     inputSchema: {
       baseUrl: baseUrlSchema,
     },
@@ -357,7 +357,7 @@ server.registerTool(
   {
     title: "Verify QuokkaPix agent unlock token",
     description:
-      "Verify a QuokkaPix paid agent unlock token before processing. Use consume=false for safe preflight checks. Use consume=true only immediately before a paid batch/scenario run when you intentionally want to consume the unlock. If scope, price or currency are omitted, the tool reads live payment options first.",
+      "Verify a QuokkaPix paid agent unlock token before processing. Use consume=false for safe preflight checks. Use consume=true only immediately before a paid batch/scenario run above the free limit when you intentionally want to consume the unlock. If scope, price or currency are omitted, the tool reads live payment options first.",
     inputSchema: {
       token: z.string().min(16).describe("Unlock token returned by the paid x402 unlock endpoint."),
       baseUrl: baseUrlSchema,

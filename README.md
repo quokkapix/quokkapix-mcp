@@ -286,11 +286,27 @@ npx quokkapix-runner --recipe website_webp_compress --input ./photo.jpg --output
 
 ## MCP Client Configuration
 
+For most users, configure the published npm package directly:
+
+```json
+{
+  "mcpServers": {
+    "quokkapix": {
+      "command": "npx",
+      "args": ["-y", "quokkapix-mcp"],
+      "env": {
+        "QUOKKAPIX_APP_URL": "https://quokkapix.com/#agent=1"
+      }
+    }
+  }
+}
+```
+
 Use absolute paths for `cwd`.
 
-### Claude Desktop
+### Claude Desktop From Source
 
-Add this to your Claude Desktop MCP config:
+If you cloned the GitHub repository instead of using npm, add this to your Claude Desktop MCP config:
 
 ```json
 {
@@ -307,9 +323,9 @@ Add this to your Claude Desktop MCP config:
 }
 ```
 
-### Cursor
+### Cursor From Source
 
-Use the same server definition in Cursor MCP settings:
+If you cloned the GitHub repository instead of using npm, use the same server definition in Cursor MCP settings:
 
 ```json
 {
@@ -474,10 +490,11 @@ Tool: `process_with_settings`
   },
   "backgroundImageFile": "/Users/me/backgrounds/studio.webp",
   "inputFiles": ["/Users/me/products/photo-1.jpg", "/Users/me/products/photo-2.jpg"],
-  "outputDir": "/Users/me/products/out",
-  "unlockToken": "eyJhbGciOiJIUzI1NiIs..."
+  "outputDir": "/Users/me/products/out"
 }
 ```
+
+This two-file batch is inside the free small-batch limit. Add an `unlockToken` only for larger paid agent batch/scenario runs.
 
 ## Example: Metadata Cleanup
 
@@ -610,13 +627,15 @@ Those require a future pixel-level analyzer. The runner does not currently prete
 
 Human QuokkaPix UI and reward-ad flows are unchanged.
 
-Agent payment rules apply only to agent batch or batch-scenario runs.
+Agent payment rules apply only to agent batch or batch-scenario runs above the
+free small-batch limit.
 
 Current policy:
 
 - single image agent run: free;
 - single image scenario: free;
-- agent batch or batch scenario up to 50 files: `0.01 USDC`;
+- agent batch up to 5 files: free;
+- agent batch or batch scenario from 6 to 50 files: `0.01 USDC`;
 - provider: Coinbase x402;
 - payment options endpoint: `/api/agent-payment/options`;
 - paid unlock endpoint: `/api/agent-unlock/coinbase-x402`;
@@ -632,7 +651,9 @@ The MCP runner can:
 
 The MCP runner does not sign x402 payments itself. An x402-capable client or wallet must obtain the `unlockToken`.
 
-Paid batch workflow:
+Always call `get_payment_options` when an agent is unsure whether a run is free or paid. The live response includes `freeBatchMaxFiles`, `paidMinFiles`, `maxFiles`, `price`, `currency` and endpoint URLs.
+
+Paid batch workflow for 6-50 files:
 
 1. Call `get_payment_options`.
 2. Use an x402-capable client to call `/api/agent-unlock/coinbase-x402`.
@@ -777,7 +798,7 @@ Use absolute local file paths. The MCP process must have permission to read them
 
 ### Batch run says payment is required
 
-Single image runs are free. Agent batch and batch-scenario runs may require a valid x402 unlock token.
+Single image runs, single-image scenarios and agent batches up to 5 files are free. Larger agent batch and batch-scenario runs may require a valid x402 unlock token.
 
 ### Browser runs out of memory
 

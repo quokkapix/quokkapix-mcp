@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+- Documented the live QuokkaPix agent payment policy: single-image runs, single-image scenarios and small batches up to 5 files are free; larger agent batch/scenario runs use x402 unlock.
+- Clarified MCP tool descriptions so agents know when `unlockToken` is needed.
+- Updated Claude/Cursor/local MCP setup examples to use the published `npx -y quokkapix-mcp` package.
+
 ## 0.3.1
 
 - Improved MCP tool descriptions and parameter schemas for Glama/agent introspection.

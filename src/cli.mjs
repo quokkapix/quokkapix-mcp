@@ -102,7 +102,7 @@ Options:
   --input, --file         Input image path. Repeat for multiple files.
   --output, --output-dir  Output directory.
   --app-url               QuokkaPix URL, default https://quokkapix.com/#agent=1.
-  --unlock-token          Paid x402 unlock token for agent batch/scenario runs.
+  --unlock-token          Paid x402 unlock token for agent batch/scenario runs above the free small-batch limit.
   --headed                Show browser window.
   --timeout-ms            Timeout in milliseconds.
 `;

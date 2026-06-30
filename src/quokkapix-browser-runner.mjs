@@ -167,7 +167,10 @@ export function buildWorkflowFromSettings(settings, { settingsId, expectedResult
       agentMode: true,
       localBrowserProcessing: true,
       fileUpload: "browser-file-input-or-dropzone",
-      payment: mode === "batch" ? "x402 unlock required for agent batch/scenario runs" : "free for single-image agent runs",
+      payment:
+        mode === "batch"
+          ? "free up to the current small-batch limit; x402 unlock may be required for larger agent batch/scenario runs"
+          : "free for single-image agent runs",
       maxFiles: Math.max(1, Number(maxFiles || (mode === "batch" ? 50 : 1)) || 1),
     },
     applySettings: settings,

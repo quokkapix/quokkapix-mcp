@@ -11,6 +11,8 @@ test("payment helpers explain x402 flow without claiming they sign payments", ()
   const flow = explainAgentPaymentFlow({ baseUrl: "https://quokkapix.com/" });
   assert.equal(flow.localBrowserProcessing, true);
   assert.match(flow.note, /cannot sign an x402 payment/i);
+  assert.match(flow.appliesTo, /free small-batch limit/i);
+  assert.equal(flow.free.singleImage, true);
   assert.equal(flow.endpoints.options, "https://quokkapix.com/api/agent-payment/options");
   assert.equal(flow.endpoints.coinbaseX402Unlock, "https://quokkapix.com/api/agent-unlock/coinbase-x402");
 });

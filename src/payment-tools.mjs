@@ -64,7 +64,7 @@ export function explainAgentPaymentFlow({ baseUrl = DEFAULT_PAYMENT_BASE_URL } =
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   return {
     service: "QuokkaPix",
-    appliesTo: "agent batch and batch scenario runs only",
+    appliesTo: "agent batch and batch scenario runs above the free small-batch limit",
     humanUi: "unchanged",
     localBrowserProcessing: true,
     note:
@@ -72,6 +72,7 @@ export function explainAgentPaymentFlow({ baseUrl = DEFAULT_PAYMENT_BASE_URL } =
     free: {
       singleImage: true,
       singleScenario: true,
+      smallBatch: "Call get_payment_options for the current free small-batch limit.",
     },
     endpoints: {
       options: `${normalizedBaseUrl}/api/agent-payment/options`,
