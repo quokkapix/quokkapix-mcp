@@ -1,5 +1,7 @@
 # QuokkaPix MCP Runner
 
+[![quokkapix-mcp MCP server](https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp/badges/score.svg)](https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp)
+
 Local MCP adapter for private, browser-based QuokkaPix image workflows.
 
 QuokkaPix MCP Runner lets AI agents process local image files with QuokkaPix by opening the QuokkaPix web app in a local browser, applying an official recipe or direct settings payload, uploading files through the browser file input, downloading the result, and writing a machine-readable `quokkapix-result.json`.
@@ -9,6 +11,10 @@ It is designed for MCP-compatible local agents such as Claude Desktop, Cursor, L
 Repository: <https://github.com/quokkapix/quokkapix-mcp>
 
 npm package: <https://www.npmjs.com/package/quokkapix-mcp>
+
+Glama listing: <https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp>
+
+mcpservers.org listing: <https://mcpservers.org/servers/quokkapix/quokkapix-mcp>
 
 Quick start:
 
@@ -241,6 +247,11 @@ Current official recipes:
 | `webp_compress_batch` | General WebP batch conversion and compression | batch | ZIP |
 | `white_background_shadow_batch` | White background product images with soft shadow | batch | ZIP |
 | `metadata_clean_batch` | Remove EXIF/GPS/camera/software metadata | batch | ZIP |
+| `single_webp_compress` | Compress one image to WebP | single | image |
+| `single_background_remove` | Remove background from one image | single | image |
+| `single_white_background` | Create one white-background product image | single | image |
+| `single_metadata_clean` | Remove metadata from one image | single | image |
+| `single_watermark` | Apply a text watermark to one image | single | image |
 | `images_to_pdf_batch` | Merge selected images or scans into one PDF | batch | PDF |
 | `social_pack_single` | Social media sizes from one image | single | ZIP |
 | `profile_avatar_pack` | Profile avatar sizes from one image | single | ZIP |
