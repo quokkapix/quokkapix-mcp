@@ -28,6 +28,11 @@ test("QA validator accepts a matching Shopify result manifest", async () => {
 
   assert.equal(report.ok, true);
   assert.equal(report.profile, "shopify-product");
+  assert.equal(report.ruleProfile.id, "shopify.product.image");
+  assert.equal(report.ruleProfile.platform, "Shopify");
+  assert.equal(report.ruleProfile.sourceType, "official");
+  assert.equal(report.ruleProfile.confidence, "high");
+  assert.match(report.checkedAgainst, /Shopify/);
   assert.equal(report.summary.failures, 0);
   assert.ok(report.checks.some((check) => check.name === "marketplace_profile_declared" && check.ok));
   assert.ok(report.checks.some((check) => check.name === "marketplace_min_dimension" && check.ok));

@@ -282,6 +282,19 @@ Current official recipes:
 | `shopify_product_pack` | Shopify product photos | batch | ZIP |
 | `amazon_white_background_pack` | Amazon-style white background product photos | batch | ZIP |
 | `google_merchant_pack` | Google Merchant product images | batch | ZIP |
+| `etsy_product_batch` | Etsy product image batch with sourced QA | batch | ZIP |
+| `ebay_listing_photo_batch` | eBay listing photo batch | batch | ZIP |
+| `walmart_product_main_batch` | Walmart product main images | batch | ZIP |
+| `tiktok_shop_product_batch` | TikTok Shop product images | batch | ZIP |
+| `temu_product_main_batch` | Temu-style product images with secondary source | batch | ZIP |
+| `shopee_product_batch` | Shopee product images | batch | ZIP |
+| `mercado_libre_accessories_batch` | Mercado Libre accessory photos | batch | ZIP |
+| `allegro_listing_image_batch` | Allegro listing images | batch | ZIP |
+| `newegg_product_image_batch` | Newegg product images | batch | ZIP |
+| `meta_catalog_product_batch` | Meta Catalog product images | batch | ZIP |
+| `flipkart_product_image_batch` | Flipkart product photos from public guidance | batch | ZIP |
+| `shein_product_square_batch` | SHEIN square product images with secondary source | batch | ZIP |
+| `snapchat_ad_image_batch` | Snapchat static ad images | batch | ZIP |
 | `website_webp_compress` | Website image compression to WebP | batch | ZIP |
 | `webp_compress_batch` | General WebP batch conversion and compression | batch | ZIP |
 | `white_background_shadow_batch` | White background product images with soft shadow | batch | ZIP |

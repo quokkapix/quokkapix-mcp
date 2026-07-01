@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.4
+
+- Added documentation for the expanded marketplace/social recipe set: Allegro, Newegg, Meta Catalog, Flipkart, SHEIN and Snapchat ad workflows.
+- Expanded QA reports with `ruleProfile` and `checkedAgainst` fields so agents can see the exact platform profile, source type, source URL and confidence used for validation.
+- Kept strict QA source-backed: unsupported platforms remain out of strict checks until a stable public source is available.
+
 ## 0.3.3
 
 - Added sourced marketplace and social image rule profile tools: `list_rule_profiles` and `get_rule_profile`.

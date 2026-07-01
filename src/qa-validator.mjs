@@ -379,6 +379,20 @@ export function validateResultManifest(manifest = {}, recipe = {}) {
   return {
     ok: failures.length === 0,
     profile: qa.profile || recipe?.id || "",
+    ruleProfile: qa.ruleProfileId
+      ? {
+          id: qa.ruleProfileId,
+          platform: qa.platform || qa.marketplace || "",
+          placement: qa.placement || "",
+          sourceName: qa.sourceName || "",
+          sourceType: qa.sourceType || "",
+          sourceUrl: qa.sourceUrl || "",
+          confidence: qa.confidence || "",
+        }
+      : null,
+    checkedAgainst: qa.ruleProfileId
+      ? `${qa.platform || qa.marketplace || "Platform"} ${qa.placement || "profile"} (${qa.sourceType || "source"}, ${qa.confidence || "unknown"} confidence)`
+      : "",
     summary: {
       checks: checks.length,
       failures: failures.length,
