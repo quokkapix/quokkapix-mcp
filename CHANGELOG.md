@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.3
+
+- Added sourced marketplace and social image rule profile tools: `list_rule_profiles` and `get_rule_profile`.
+- Added QA support for validating result manifests against sourced rule profiles.
+- Added official recipes for Etsy, eBay, Walmart, TikTok Shop, Temu, Shopee and Mercado Libre accessory workflows.
+- Kept source requirements explicit: official and secondary sources are marked in the rule profiles.
+
 ## 0.3.2
 
 - Documented the live QuokkaPix agent payment policy: single-image runs, single-image scenarios and small batches up to 5 files are free; larger agent batch/scenario runs use x402 unlock.

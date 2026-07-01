@@ -1,6 +1,6 @@
 {
   "name": "quokkapix-mcp",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": false,
   "type": "module",
   "description": "Local MCP adapter for QuokkaPix browser-only image workflows.",
@@ -40,7 +40,7 @@
     "quokkapix-runner": "src/cli.mjs"
   },
   "scripts": {
-    "check": "node --check src/server.mjs && node --check src/cli.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/qa-validator.mjs && node --check src/payment-tools.mjs && node --test test/*.test.mjs",
+    "check": "node --check src/server.mjs && node --check src/cli.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/rule-store.mjs && node --check src/qa-validator.mjs && node --check src/payment-tools.mjs && node --test test/*.test.mjs",
     "test": "npm run check",
     "prepublishOnly": "npm run check && npm pack --dry-run",
     "test:e2e": "node --test test/*.e2e.mjs"

@@ -51,6 +51,7 @@ Local file paths are available only to the local MCP runner on the user's machin
 Use this adapter when an AI agent needs to run repeatable image workflows like:
 
 - prepare product photos for Shopify, Amazon, or Google Merchant;
+- validate marketplace and social image outputs against sourced rule profiles;
 - compress images to WebP for a website;
 - remove EXIF/GPS metadata;
 - generate social media image packs;
@@ -135,11 +136,49 @@ Validates a custom recipe object before processing.
 
 This does not upload files and does not start processing.
 
+### `list_rule_profiles`
+
+Lists sourced marketplace and social image rule profiles.
+
+Use this when an agent needs facts for Amazon, Shopify, Google Merchant, Etsy, eBay, Walmart, TikTok Shop, Mercado Libre, Temu, Shopee, Instagram, YouTube, LinkedIn, X, Pinterest, Facebook or TikTok before choosing a workflow or checking an output.
+
+Every profile declares:
+
+- `sourceType`: `official` or `secondary`;
+- `sourceUrl`;
+- `confidence`;
+- requirements and recommendations that were found from the named source.
+
+The runner does not invent missing marketplace requirements. Temu, Mercado Libre, Shopee and some YouTube entries are marked as secondary or category/country-specific where official public specs were limited.
+
+### `get_rule_profile`
+
+Returns one rule profile by id, for example:
+
+```json
+{
+  "id": "amazon.product.image"
+}
+```
+
+Agents can pass the returned facts into their own planning, or call `validate_result_manifest` with `ruleProfileId`.
+
 ### `validate_result_manifest`
 
 Validates an existing `quokkapix-result.json` against a recipe or custom QA contract.
 
 This is useful when an agent wants to inspect a previous run and decide whether the output is acceptable.
+
+Optional input:
+
+```json
+{
+  "ruleProfileId": "amazon.product.image",
+  "manifest": {}
+}
+```
+
+When `ruleProfileId` is provided, the QA report includes sourced marketplace checks such as supported formats, dimensions, source type and URL. Visual checks like "white background" are reported as metadata limitations unless the browser result manifest contains enough evidence.
 
 ### `process_images`
 

@@ -82,6 +82,32 @@ export function validateResultManifest(manifest = {}, recipe = {}) {
     });
   }
 
+  if (qa.expectedMinSourceFiles) {
+    addCheck(
+      checks,
+      "source_count_meets_rule_minimum",
+      Number(manifest.source?.count || 0) >= Number(qa.expectedMinSourceFiles),
+      {
+        expected: `>= ${qa.expectedMinSourceFiles}`,
+        actual: Number(manifest.source?.count || 0),
+        severity: "warning",
+      },
+    );
+  }
+
+  if (qa.recommendedMinSourceFiles) {
+    addCheck(
+      checks,
+      "source_count_meets_rule_recommendation",
+      Number(manifest.source?.count || 0) >= Number(qa.recommendedMinSourceFiles),
+      {
+        expected: `>= ${qa.recommendedMinSourceFiles}`,
+        actual: Number(manifest.source?.count || 0),
+        severity: "info",
+      },
+    );
+  }
+
   if (qa.expectedFormat) {
     const formatMatches = outputs.every((output) => {
       const format = String(output.format || "").toLowerCase();
@@ -260,6 +286,19 @@ export function validateResultManifest(manifest = {}, recipe = {}) {
     });
   }
 
+  if (qa.ruleProfileId) {
+    addCheck(checks, "sourced_rule_profile_declared", true, {
+      expected: qa.ruleProfileId,
+      actual: `${qa.platform || qa.marketplace || ""} ${qa.placement || ""}`.trim(),
+      severity: "info",
+    });
+    addCheck(checks, "rule_source_declared", Boolean(qa.sourceUrl), {
+      expected: "source URL",
+      actual: qa.sourceUrl || "",
+      severity: "info",
+    });
+  }
+
   if (qa.minDimension) {
     const dimensioned = outputs.filter((output) => output.outputWidth && output.outputHeight);
     if (dimensioned.length > 0) {
@@ -274,6 +313,44 @@ export function validateResultManifest(manifest = {}, recipe = {}) {
           expected: `short side >= ${qa.minDimension}`,
           actual: dimensioned.map((output) => `${output.outputWidth}x${output.outputHeight}`).join(", "),
           severity: "warning",
+        },
+      );
+    }
+  }
+
+  if (qa.minLongestSide || qa.maxLongestSide) {
+    const dimensioned = outputs.filter((output) => output.outputWidth && output.outputHeight);
+    addCheck(checks, "long_side_dimension_metadata_available", dimensioned.length > 0, {
+      actual: `${dimensioned.length}/${outputs.length}`,
+      severity: "warning",
+    });
+    if (dimensioned.length > 0 && qa.minLongestSide) {
+      addCheck(
+        checks,
+        "min_longest_side",
+        dimensioned.every(
+          (output) =>
+            Math.max(Number(output.outputWidth) || 0, Number(output.outputHeight) || 0) >= Number(qa.minLongestSide),
+        ),
+        {
+          expected: `>= ${qa.minLongestSide}`,
+          actual: dimensioned.map((output) => `${output.outputWidth}x${output.outputHeight}`).join(", "),
+          severity: "warning",
+        },
+      );
+    }
+    if (dimensioned.length > 0 && qa.maxLongestSide) {
+      addCheck(
+        checks,
+        "max_longest_side",
+        dimensioned.every(
+          (output) =>
+            Math.max(Number(output.outputWidth) || 0, Number(output.outputHeight) || 0) <= Number(qa.maxLongestSide),
+        ),
+        {
+          expected: `<= ${qa.maxLongestSide}`,
+          actual: dimensioned.map((output) => `${output.outputWidth}x${output.outputHeight}`).join(", "),
+          severity: "error",
         },
       );
     }

@@ -5,6 +5,12 @@ import { z } from "zod";
 
 import { processImagesWithQuokkaPix } from "./quokkapix-browser-runner.mjs";
 import { getRecipe, listRecipes, validateRecipe } from "./recipe-store.mjs";
+import {
+  buildQaFromRuleProfile,
+  getRuleProfile,
+  listRuleProfiles,
+  validateRuleProfile,
+} from "./rule-store.mjs";
 import { validateResultManifest } from "./qa-validator.mjs";
 import {
   explainAgentPaymentFlow,
@@ -14,7 +20,7 @@ import {
 
 const server = new McpServer({
   name: "quokkapix-mcp",
-  version: "0.3.2",
+  version: "0.3.3",
 });
 
 const localFilePathSchema = z
@@ -213,6 +219,39 @@ server.registerTool(
 );
 
 server.registerTool(
+  "list_rule_profiles",
+  {
+    title: "List sourced QuokkaPix platform rule profiles",
+    description:
+      "List sourced image requirement profiles for marketplaces and social placements. Use this before marketplace QA when an agent needs facts for Amazon, Shopify, Google Merchant, Etsy, eBay, Walmart, TikTok Shop, Mercado Libre, Temu, Shopee, Instagram, YouTube, LinkedIn, X, Pinterest, Facebook or TikTok. Secondary sources are marked explicitly.",
+    inputSchema: {},
+  },
+  async () => jsonResult(await listRuleProfiles()),
+);
+
+server.registerTool(
+  "get_rule_profile",
+  {
+    title: "Get sourced QuokkaPix platform rule profile",
+    description:
+      "Return one sourced platform image rule profile by id, including requirements, recommendations, source URL, source type and confidence. This tool does not process files and does not invent missing marketplace rules.",
+    inputSchema: {
+      id: z
+        .string()
+        .min(1)
+        .describe("Rule profile id from list_rule_profiles, for example amazon.product.image or instagram.feed.photo."),
+    },
+  },
+  async ({ id }) => {
+    const ruleProfile = await getRuleProfile(id);
+    return jsonResult({
+      ruleProfile,
+      validation: validateRuleProfile(ruleProfile),
+    });
+  },
+);
+
+server.registerTool(
   "validate_result_manifest",
   {
     title: "Validate QuokkaPix result manifest",
@@ -225,12 +264,32 @@ server.registerTool(
         .optional()
         .describe("Optional official recipe id whose expectedResult.qa contract should be used."),
       recipe: recipeSchema.optional().describe("Optional custom recipe with expectedResult.qa. Used instead of recipeId when provided."),
+      ruleProfileId: z
+        .string()
+        .min(1)
+        .optional()
+        .describe("Optional sourced platform rule profile id. The profile is returned beside the QA report for agent audit trails."),
       manifest: resultManifestSchema,
     },
   },
-  async ({ recipeId, recipe, manifest }) => {
+  async ({ recipeId, recipe, ruleProfileId, manifest }) => {
+    const ruleProfile = ruleProfileId ? await getRuleProfile(ruleProfileId) : null;
     const selectedRecipe = recipe || (recipeId ? await getRecipe(recipeId) : {});
-    return jsonResult(validateResultManifest(manifest, selectedRecipe));
+    const qa = {
+      ...(selectedRecipe.expectedResult?.qa || {}),
+      ...buildQaFromRuleProfile(ruleProfile),
+    };
+    const mergedRecipe = {
+      ...selectedRecipe,
+      expectedResult: {
+        ...(selectedRecipe.expectedResult || {}),
+        qa,
+      },
+    };
+    return jsonResult({
+      ...validateResultManifest(manifest, mergedRecipe),
+      ruleProfile,
+    });
   },
 );
 

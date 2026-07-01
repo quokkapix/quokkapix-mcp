@@ -5,6 +5,12 @@ import path from "node:path";
 
 import { getRecipe, listRecipes, resolveRecipe, validateRecipe } from "../src/recipe-store.mjs";
 import {
+  buildQaFromRuleProfile,
+  getRuleProfile,
+  listRuleProfiles,
+  validateRuleProfile,
+} from "../src/rule-store.mjs";
+import {
   assertAllowedAppUrl,
   buildWorkflowFromSettings,
   processImagesWithQuokkaPix,
@@ -23,6 +29,23 @@ test("MCP runner reads official QuokkaPix recipe catalog", async () => {
   assert.ok(recipes.some((recipe) => recipe.id === "single_white_background"));
   assert.ok(recipes.some((recipe) => recipe.id === "single_metadata_clean"));
   assert.ok(recipes.some((recipe) => recipe.id === "single_watermark"));
+});
+
+test("MCP runner reads sourced platform rule profiles", async () => {
+  const profiles = await listRuleProfiles();
+  assert.ok(profiles.length >= 20);
+  assert.ok(profiles.some((profile) => profile.id === "amazon.product.image"));
+  assert.ok(profiles.some((profile) => profile.id === "temu.product.main_image"));
+
+  const amazon = await getRuleProfile("amazon.product.image");
+  assert.equal(validateRuleProfile(amazon).valid, true);
+  assert.equal(amazon.sourceType, "official");
+  assert.ok(amazon.sourceUrl.includes("sellercentral.amazon.com"));
+
+  const qa = buildQaFromRuleProfile(amazon);
+  assert.equal(qa.ruleProfileId, "amazon.product.image");
+  assert.ok(qa.allowedFormats.includes("jpg"));
+  assert.equal(qa.maxLongestSide, 10000);
 });
 
 test("MCP runner loads and validates a recipe by id", async () => {
