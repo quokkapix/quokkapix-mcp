@@ -13,11 +13,16 @@ import { parseArgs } from "../src/cli.mjs";
 
 test("MCP runner reads official QuokkaPix recipe catalog", async () => {
   const recipes = await listRecipes();
-  assert.ok(recipes.length >= 12);
+  assert.ok(recipes.length >= 17);
   assert.ok(recipes.some((recipe) => recipe.id === "shopify_product_pack"));
   assert.ok(recipes.some((recipe) => recipe.id === "website_webp_compress"));
   assert.ok(recipes.some((recipe) => recipe.id === "white_background_shadow_batch"));
   assert.ok(recipes.some((recipe) => recipe.id === "images_to_pdf_batch"));
+  assert.ok(recipes.some((recipe) => recipe.id === "single_webp_compress"));
+  assert.ok(recipes.some((recipe) => recipe.id === "single_background_remove"));
+  assert.ok(recipes.some((recipe) => recipe.id === "single_white_background"));
+  assert.ok(recipes.some((recipe) => recipe.id === "single_metadata_clean"));
+  assert.ok(recipes.some((recipe) => recipe.id === "single_watermark"));
 });
 
 test("MCP runner loads and validates a recipe by id", async () => {
@@ -34,6 +39,40 @@ test("MCP runner loads and validates a recipe by id", async () => {
   const avatar = await getRecipe("profile_avatar_pack");
   assert.equal(avatar.applySettings.readyScenario, "avatar-pack");
   assert.equal(validateRecipe(avatar).valid, true);
+});
+
+test("MCP runner validates every official recipe and preserves single/batch payment policy", async () => {
+  const recipes = await listRecipes();
+  const singleRecipeIds = new Set([
+    "single_webp_compress",
+    "single_background_remove",
+    "single_white_background",
+    "single_metadata_clean",
+    "single_watermark",
+    "social_pack_single",
+    "profile_avatar_pack",
+    "favicon_app_icon_pack",
+  ]);
+
+  for (const summary of recipes) {
+    const recipe = await getRecipe(summary.id);
+    assert.equal(validateRecipe(recipe).valid, true, `${summary.id} should be a valid recipe`);
+    assert.equal(summary.mode, recipe.applySettings.mode, `${summary.id} summary mode should match recipe`);
+    assert.equal(summary.maxFiles, recipe.requires.maxFiles, `${summary.id} summary maxFiles should match recipe`);
+    assert.equal(summary.payment, recipe.requires.payment, `${summary.id} summary payment should match recipe`);
+    assert.ok(recipe.expectedResult?.qa, `${summary.id} should expose expectedResult.qa for agents`);
+
+    if (singleRecipeIds.has(summary.id)) {
+      assert.equal(recipe.applySettings.mode, "single", `${summary.id} should stay single mode`);
+      assert.equal(recipe.requires.maxFiles, 1, `${summary.id} should stay limited to one file`);
+      assert.match(recipe.requires.payment, /free/i, `${summary.id} should stay free for single-image runs`);
+    } else {
+      assert.equal(recipe.applySettings.mode, "batch", `${summary.id} should stay batch mode`);
+      assert.equal(recipe.requires.maxFiles, 50, `${summary.id} should keep the documented paid batch limit`);
+      assert.match(recipe.requires.payment, /free up to 5 files/i, `${summary.id} should document the free small-batch threshold`);
+      assert.match(recipe.requires.payment, /x402 unlock/i, `${summary.id} should document paid batch unlocks`);
+    }
+  }
 });
 
 test("MCP runner rejects invalid custom recipes", () => {
