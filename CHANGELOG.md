@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.5
+
+- Added `message` and `remediation` fields to QA checks so agents can explain what failed and how to fix it.
+- Kept the existing QA schema compatible: `qa.ok`, `qa.summary`, `qa.checks[]`, `ruleProfile` and `checkedAgainst` are unchanged.
+
 ## 0.3.4
 
 - Added documentation for the expanded marketplace/social recipe set: Allegro, Newegg, Meta Catalog, Flipkart, SHEIN and Snapchat ad workflows.

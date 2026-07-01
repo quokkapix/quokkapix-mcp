@@ -648,6 +648,7 @@ The manifest does not contain image bytes.
 ## QA Validation
 
 The runner validates result manifests against recipe QA contracts.
+Each check includes `name`, `ok`, `severity`, `expected`, `actual`, `message` and `remediation`, so agents can report both what failed and what setting to change.
 
 Current QA checks include:
 

@@ -410,7 +410,78 @@ function addCheck(checks, name, ok, detail = {}) {
     severity: detail.severity || "error",
     expected: detail.expected ?? null,
     actual: detail.actual ?? null,
+    message: getCheckMessage(name),
+    remediation: getCheckRemediation(name),
   });
+}
+
+function getCheckMessage(name) {
+  const messages = {
+    status_done: "Processing must finish successfully.",
+    source_count_positive: "At least one source file must be present.",
+    outputs_present: "At least one output must be produced.",
+    expected_min_outputs: "The recipe expects more output files.",
+    expected_output_kind: "Output type must match the selected profile.",
+    zip_entries_manifested: "ZIP content should be represented in the result manifest.",
+    zip_entry_names_available: "Every ZIP entry should have an output name.",
+    zip_entry_sizes_available: "Every ZIP entry should have byte size metadata.",
+    zip_entry_dimensions_available: "Every image ZIP entry should have output dimensions.",
+    source_count_within_recipe_limit: "File count must stay within the recipe limit.",
+    source_count_meets_rule_minimum: "Source file count is below the marketplace minimum.",
+    source_count_meets_rule_recommendation: "Source file count is below the marketplace recommendation.",
+    expected_output_format: "Output format must match the recipe.",
+    allowed_output_formats: "Output format must be allowed by the sourced profile.",
+    dimension_metadata_available: "Output dimensions must be available for this check.",
+    expected_output_width: "Output width must match the recipe.",
+    expected_output_height: "Output height must match the recipe.",
+    square_output: "Output must be square.",
+    max_output_width: "Output width is above the sourced maximum.",
+    max_output_height: "Output height is above the sourced maximum.",
+    min_output_width: "Output width is below the sourced minimum.",
+    min_output_height: "Output height is below the sourced minimum.",
+    max_output_size_kb: "Output file is larger than the target.",
+    per_file_size_metadata_available: "Per-file size metadata is needed for archive QA.",
+    output_name_prefix: "Output name does not match the recipe naming pattern.",
+    marketplace_profile_declared: "The recipe declares its marketplace profile.",
+    sourced_rule_profile_declared: "The QA profile has a sourced rule profile.",
+    rule_source_declared: "The QA rule includes a source URL.",
+    marketplace_min_dimension: "Output is below the marketplace minimum dimension.",
+    long_side_dimension_metadata_available: "Long-side check needs output dimensions.",
+    min_longest_side: "Longest side is below the sourced minimum.",
+    max_longest_side: "Longest side is above the sourced maximum.",
+  };
+  if (name.startsWith("visual_check_")) {
+    return "Visual rule needs a manual or pixel-level check.";
+  }
+  if (name.startsWith("warning_absent_")) {
+    return "A blocking warning is present in the result.";
+  }
+  if (name.startsWith("output_name_includes_")) {
+    return "Output name is missing a required marker.";
+  }
+  return messages[name] || name.replace(/_/g, " ");
+}
+
+function getCheckRemediation(name) {
+  if (name.includes("format")) return "Choose the matching Convert/Compress output format.";
+  if (
+    name.includes("width") ||
+    name.includes("height") ||
+    name.includes("dimension") ||
+    name.includes("side") ||
+    name === "square_output"
+  ) {
+    return "Use the matching Resize/Crop/platform preset and run again.";
+  }
+  if (name.includes("size_kb")) return "Lower quality, enable target KB, or use WebP/AVIF when allowed.";
+  if (name.includes("source_count")) return "Adjust the batch size or add the required number of source files.";
+  if (name.includes("output_name")) return "Use the recipe naming preset or batch rename pattern.";
+  if (name.startsWith("visual_check_")) return "Inspect the output visually; metadata alone cannot prove this rule.";
+  if (name.startsWith("warning_absent_")) return "Change settings to remove the reported warning before delivery.";
+  if (name.startsWith("zip_entry_") || name === "zip_entries_manifested") {
+    return "Use current QuokkaPix batch output so each ZIP entry is recorded.";
+  }
+  return "Review the selected profile and rerun with corrected settings.";
 }
 
 function inferKindFromOutputs(outputs) {

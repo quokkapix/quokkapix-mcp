@@ -60,7 +60,7 @@ test("QA validator reports machine-readable failures and warnings", async () => 
   );
 
   assert.equal(report.ok, false);
-  assert.ok(report.checks.some((check) => check.name === "expected_output_format" && !check.ok));
+  assert.ok(report.checks.some((check) => check.name === "expected_output_format" && !check.ok && check.remediation));
   assert.ok(report.checks.some((check) => check.name === "expected_output_width" && !check.ok));
   assert.ok(report.checks.some((check) => check.name === "warning_absent_unsupported_format" && !check.ok));
 });
