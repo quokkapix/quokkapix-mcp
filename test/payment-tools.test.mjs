@@ -23,7 +23,14 @@ test("payment helpers fetch options and verify unlock tokens through public endp
   globalThis.fetch = async (url, options = {}) => {
     calls.push({ url, options });
     if (url === "https://example.test/api/agent-payment/options") {
-      return jsonResponse({ scope: "agent-batch-run", price: "0.02", currency: "USDC", maxFiles: 50 });
+      return jsonResponse({
+        scope: "agent-batch-run",
+        price: "0.02",
+        currency: "USDC",
+        freeBatchMaxFiles: 5,
+        paidMinFiles: 6,
+        maxFiles: 50,
+      });
     }
     if (url === "https://example.test/api/agent-unlock/verify") {
       const body = JSON.parse(options.body);
@@ -40,6 +47,9 @@ test("payment helpers fetch options and verify unlock tokens through public endp
   try {
     const options = await getAgentPaymentOptions({ baseUrl: "https://example.test" });
     assert.equal(options.price, "0.02");
+    assert.equal(options.freeBatchMaxFiles, 5);
+    assert.equal(options.paidMinFiles, 6);
+    assert.equal(options.maxFiles, 50);
     const verify = await verifyAgentUnlockToken({
       baseUrl: "https://example.test",
       token: "a".repeat(32),
