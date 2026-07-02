@@ -690,6 +690,7 @@ Current policy:
 - agent batch up to 5 files: free;
 - agent batch or batch scenario from 6 to 50 files: `0.01 USDC`;
 - provider: Coinbase x402;
+- currency/networks: USDC on Base (`eip155:8453`, default), Polygon (`eip155:137`), Arbitrum (`eip155:42161`) and World Chain (`eip155:480`) when exposed by `/api/agent-payment/options`;
 - payment options endpoint: `/api/agent-payment/options`;
 - paid unlock endpoint: `/api/agent-unlock/coinbase-x402`;
 - verify endpoint: `/api/agent-unlock/verify`;
@@ -704,7 +705,7 @@ The MCP runner can:
 
 The MCP runner does not sign x402 payments itself. An x402-capable client or wallet must obtain the `unlockToken`.
 
-Always call `get_payment_options` when an agent is unsure whether a run is free or paid. The live response includes `freeBatchMaxFiles`, `paidMinFiles`, `maxFiles`, `price`, `currency` and endpoint URLs.
+Always call `get_payment_options` when an agent is unsure whether a run is free or paid. The live response includes `freeBatchMaxFiles`, `paidMinFiles`, `maxFiles`, `price`, `currency`, supported x402 networks and endpoint URLs.
 
 Paid batch workflow for 6-50 files:
 
