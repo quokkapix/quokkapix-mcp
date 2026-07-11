@@ -215,7 +215,9 @@ Supported editor areas depend on the QuokkaPix browser contract and include:
 - rotate;
 - convert;
 - compress;
+- advanced export to browser-supported formats and experimental JPEG XL when the browser-loaded encoder is available;
 - metadata removal/reporting;
+- PDF merge/split/extract tools through `tool=convert` and `pdf.operation`;
 - background removal/replacement settings;
 - watermark;
 - effects;
@@ -246,6 +248,22 @@ For custom scenarios, prefer the explicit structured form:
 ```
 
 Step `settings` use the same section keys as `window.QuokkaPixAgent.applySettings`.
+
+PDF tools use PDF uploads instead of image uploads:
+
+```json
+{
+  "tool": "convert",
+  "pdf": {
+    "operation": "extract",
+    "extractPages": "1,3-5"
+  }
+}
+```
+
+Use `operation: "merge"` to combine PDFs, `operation: "split"` to export pages as a ZIP, or `operation: "extract"` with `extractPages`.
+
+ZIP upload is batch-only. If a user or agent selects a `.zip` in batch mode, QuokkaPix unpacks it locally in the browser and adds supported images from the archive to the batch queue. RAR and 7z are not accepted.
 
 ### `get_payment_options`
 
@@ -832,6 +850,9 @@ The package whitelist includes only:
 - Background removal may download browser-side AI model files and depends on browser/device capability.
 - WebGPU/WebNN availability depends on the user's browser and hardware.
 - HEIC/AVIF/WebP support depends on browser and optional browser-side encoders.
+- JPEG XL export is experimental and requires the browser-loaded advanced encoder; it has no Canvas fallback.
+- PDF merge/split/extract expects PDF files. The existing images-to-PDF recipe expects image files.
+- ZIP import works only in batch mode and only extracts supported image files.
 - GIF background removal is not supported.
 - Pixel-level QA for product centering, exact white background and background-removal quality is not implemented yet.
 - The adapter currently uses Playwright browser automation, not a native image-processing library.
