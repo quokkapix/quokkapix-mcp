@@ -217,7 +217,7 @@ Supported editor areas depend on the QuokkaPix browser contract and include:
 - compress;
 - advanced export to browser-supported formats and experimental JPEG XL when the browser-loaded encoder is available;
 - metadata removal/reporting;
-- PDF merge/split/extract tools through `tool=pdf` and `pdf.operation`;
+- PDF merge/split/extract tools through `tool=pdf` and `pdf.operation` for uploaded PDF files only; ZIP archives are accepted only for PDF merge and only PDF entries are extracted;
 - background removal/replacement settings;
 - watermark;
 - effects;
