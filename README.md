@@ -217,7 +217,7 @@ Supported editor areas depend on the QuokkaPix browser contract and include:
 - compress;
 - advanced export to browser-supported formats and experimental JPEG XL when the browser-loaded encoder is available;
 - metadata removal/reporting;
-- PDF merge/split/extract tools through `tool=convert` and `pdf.operation`;
+- PDF merge/split/extract tools through `tool=pdf` and `pdf.operation`;
 - background removal/replacement settings;
 - watermark;
 - effects;
@@ -253,15 +253,16 @@ PDF tools use PDF uploads instead of image uploads:
 
 ```json
 {
-  "tool": "convert",
+  "tool": "pdf",
   "pdf": {
     "operation": "extract",
-    "extractPages": "1,3-5"
+    "extractPages": "1,3-5",
+    "extractOutput": "pdf"
   }
 }
 ```
 
-Use `operation: "merge"` to combine PDFs, `operation: "split"` to export pages as a ZIP, or `operation: "extract"` with `extractPages`.
+Use `operation: "split"` to export one uploaded PDF as a ZIP of one-page PDFs. Use `operation: "extract"` with `extractPages` to create one PDF containing only the selected pages from one uploaded PDF; page order is preserved, so `extractPages: "3,1"` exports page 3 before page 1. Set `extractOutput: "zip"` when the selected pages should be returned as separate one-page PDFs inside a ZIP. `tool: "pdf"` defaults to split. Split and extract are single-PDF workflows because page numbers refer to one source PDF. Use `operation: "merge"` to combine multiple PDFs into one PDF in the current browser file order; merge is a batch workflow and switches the browser editor to batch mode. Human users can reorder merge files in the UI; MCP clients should pass files in the desired merge order.
 
 ZIP upload is batch-only. If a user or agent selects a `.zip` in batch mode, QuokkaPix unpacks it locally in the browser and adds supported images from the archive to the batch queue. RAR and 7z are not accepted.
 
