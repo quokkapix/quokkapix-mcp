@@ -313,6 +313,8 @@ Current official recipes:
 | `meta_catalog_product_batch` | Meta Catalog product images | batch | ZIP |
 | `flipkart_product_image_batch` | Flipkart product photos from public guidance | batch | ZIP |
 | `shein_product_square_batch` | SHEIN square product images with secondary source | batch | ZIP |
+| `otto_product_image_batch` | OTTO product images with sourced 500 x 1000 px minimum QA | batch | ZIP |
+| `trendyol_product_image_batch` | Trendyol product images at sourced 1200 x 1800 px size | batch | ZIP |
 | `snapchat_ad_image_batch` | Snapchat static ad images | batch | ZIP |
 | `website_webp_compress` | Website image compression to WebP | batch | ZIP |
 | `webp_compress_batch` | General WebP batch conversion and compression | batch | ZIP |
