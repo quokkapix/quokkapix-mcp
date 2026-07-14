@@ -65,7 +65,47 @@ test("QA validator reports machine-readable failures and warnings", async () => 
   assert.ok(report.checks.some((check) => check.name === "warning_absent_unsupported_format" && !check.ok));
 });
 
-test("QA validator reports archive contents and metadata-only visual checks", async () => {
+test("QA validator uses browser pixel QA metrics when present", async () => {
+  const recipe = await getRecipe("amazon_white_background_pack");
+  const report = validateResultManifest(
+    {
+      status: "done",
+      source: { count: 1, totalBytes: 2048 },
+      output: { kind: "zip" },
+      outputs: [
+        {
+          outputName: "amazon_1.jpg",
+          outputWidth: 2000,
+          outputHeight: 2000,
+          format: "jpg",
+          sizeBytes: 300 * 1024,
+          pixelQa: {
+            background: {
+              edgeWhiteRatio: 1,
+              edgeNonWhiteVisibleRatio: 0,
+            },
+            subject: {
+              centerOffsetX: 0.01,
+              centerOffsetY: -0.01,
+              margins: { left: 0.2, right: 0.2, top: 0.18, bottom: 0.18 },
+              touchesEdge: false,
+            },
+          },
+          warnings: [],
+        },
+      ],
+      warnings: [],
+    },
+    recipe,
+  );
+
+  assert.equal(report.ok, true);
+  assert.ok(report.checks.some((check) => check.name === "visual_check_white_background" && check.ok));
+  assert.ok(report.checks.some((check) => check.name === "visual_check_subject_centered" && check.ok));
+  assert.ok(report.checks.some((check) => check.name === "visual_check_safe_margins" && check.ok));
+});
+
+test("QA validator reports archive contents and output-pack details", async () => {
   const recipe = {
     id: "social_pack_single",
     requires: { maxFiles: 1 },

@@ -356,14 +356,7 @@ export function validateResultManifest(manifest = {}, recipe = {}) {
     }
   }
 
-  for (const visualCheck of qa.visualChecks || []) {
-    addCheck(checks, `visual_check_${visualCheck}`, false, {
-      expected: "pixel-level browser visual QA",
-      actual:
-        "not available from metadata-only manifest; use a future pixel analyzer for white background, subject centering, margins or background-removal quality",
-      severity: "info",
-    });
-  }
+  validatePixelVisualChecks(checks, outputs, qa);
 
   for (const blockedWarning of qa.requiredWarningsAbsent || []) {
     addCheck(checks, `warning_absent_${blockedWarning}`, !warnings.has(blockedWarning), {
@@ -415,6 +408,94 @@ function addCheck(checks, name, ok, detail = {}) {
   });
 }
 
+function validatePixelVisualChecks(checks, outputs, qa) {
+  if (!Array.isArray(qa.visualChecks) || qa.visualChecks.length === 0) return;
+  const evaluated = outputs
+    .filter((output) => output.pixelQa)
+    .flatMap((output) =>
+      evaluatePixelVisualChecks(output.pixelQa, qa.visualChecks).map((check) => ({
+        ...check,
+        outputName: output.outputName || output.name || "",
+      })),
+    );
+  const grouped = new Map();
+  for (const check of evaluated) {
+    const group = grouped.get(check.name) || [];
+    group.push(check);
+    grouped.set(check.name, group);
+  }
+  for (const [name, group] of grouped) {
+    addCheck(checks, name, group.every((check) => check.ok), {
+      expected: group[0]?.expected || null,
+      actual: group.map((check) =>
+        check.outputName ? `${check.outputName}: ${check.actual}` : check.actual,
+      ).join("; "),
+      severity: group[0]?.severity || "warning",
+    });
+  }
+}
+
+function evaluatePixelVisualChecks(pixelQa, visualChecks = []) {
+  const requested = new Set(visualChecks.map((check) => String(check || "")));
+  const checks = [];
+  if (requested.has("white_background")) {
+    checks.push({
+      name: "visual_check_white_background",
+      ok:
+        Number(pixelQa.background?.edgeWhiteRatio || 0) >= 0.985 &&
+        Number(pixelQa.background?.edgeNonWhiteVisibleRatio || 0) <= 0.015,
+      expected: "edgeWhiteRatio >= 0.985 and edgeNonWhiteVisibleRatio <= 0.015",
+      actual:
+        `edgeWhiteRatio=${formatMetric(pixelQa.background?.edgeWhiteRatio)}, ` +
+        `edgeNonWhiteVisibleRatio=${formatMetric(pixelQa.background?.edgeNonWhiteVisibleRatio)}`,
+      severity: "warning",
+    });
+  }
+  if (requested.has("subject_centered") && pixelQa.subject) {
+    checks.push({
+      name: "visual_check_subject_centered",
+      ok:
+        Math.abs(Number(pixelQa.subject.centerOffsetX || 0)) <= 0.08 &&
+        Math.abs(Number(pixelQa.subject.centerOffsetY || 0)) <= 0.08,
+      expected: "absolute center offsets <= 0.08 of image size",
+      actual:
+        `x=${formatMetric(pixelQa.subject.centerOffsetX)}, ` +
+        `y=${formatMetric(pixelQa.subject.centerOffsetY)}`,
+      severity: "warning",
+    });
+  }
+  if (requested.has("safe_margins") && pixelQa.subject) {
+    const margins = pixelQa.subject.margins || {};
+    const minMargin = Math.min(
+      Number(margins.left || 0),
+      Number(margins.right || 0),
+      Number(margins.top || 0),
+      Number(margins.bottom || 0),
+    );
+    checks.push({
+      name: "visual_check_safe_margins",
+      ok: minMargin >= 0.03 && pixelQa.subject.touchesEdge === false,
+      expected: "minimum subject margin >= 0.03 and no edge contact",
+      actual: `minMargin=${formatMetric(minMargin)}, touchesEdge=${Boolean(pixelQa.subject.touchesEdge)}`,
+      severity: "warning",
+    });
+  }
+  if (requested.has("transparent_background")) {
+    checks.push({
+      name: "visual_check_transparent_background",
+      ok: Number(pixelQa.alpha?.transparentPixelRatio || 0) >= 0.02,
+      expected: "transparentPixelRatio >= 0.02",
+      actual: `transparentPixelRatio=${formatMetric(pixelQa.alpha?.transparentPixelRatio)}`,
+      severity: "warning",
+    });
+  }
+  return checks;
+}
+
+function formatMetric(value) {
+  return String(Math.round((Number(value) || 0) * 1_000_000) / 1_000_000);
+}
+
 function getCheckMessage(name) {
   const messages = {
     status_done: "Processing must finish successfully.",
@@ -449,9 +530,13 @@ function getCheckMessage(name) {
     long_side_dimension_metadata_available: "Long-side check needs output dimensions.",
     min_longest_side: "Longest side is below the sourced minimum.",
     max_longest_side: "Longest side is above the sourced maximum.",
+    visual_check_white_background: "Output background edges should be white.",
+    visual_check_subject_centered: "Detected subject should be centered.",
+    visual_check_safe_margins: "Detected subject should not touch the output edges.",
+    visual_check_transparent_background: "Output should include transparent background pixels.",
   };
   if (name.startsWith("visual_check_")) {
-    return "Visual rule needs a manual or pixel-level check.";
+    return "Pixel-level visual check did not meet the threshold.";
   }
   if (name.startsWith("warning_absent_")) {
     return "A blocking warning is present in the result.";
@@ -476,7 +561,10 @@ function getCheckRemediation(name) {
   if (name.includes("size_kb")) return "Lower quality, enable target KB, or use WebP/AVIF when allowed.";
   if (name.includes("source_count")) return "Adjust the batch size or add the required number of source files.";
   if (name.includes("output_name")) return "Use the recipe naming preset or batch rename pattern.";
-  if (name.startsWith("visual_check_")) return "Inspect the output visually; metadata alone cannot prove this rule.";
+  if (name === "visual_check_white_background") return "Use a white background preset or rerun background replacement.";
+  if (name === "visual_check_subject_centered") return "Use Crop/Resize fit presets to center the subject.";
+  if (name === "visual_check_safe_margins") return "Increase padding or use Fit instead of Fill before export.";
+  if (name === "visual_check_transparent_background") return "Export as PNG/WebP with transparent background enabled.";
   if (name.startsWith("warning_absent_")) return "Change settings to remove the reported warning before delivery.";
   if (name.startsWith("zip_entry_") || name === "zip_entries_manifested") {
     return "Use current QuokkaPix batch output so each ZIP entry is recorded.";

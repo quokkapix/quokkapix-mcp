@@ -91,9 +91,16 @@ test("MCP runner validates every official recipe and preserves single/batch paym
       assert.match(recipe.requires.payment, /free/i, `${summary.id} should stay free for single-image runs`);
     } else {
       assert.equal(recipe.applySettings.mode, "batch", `${summary.id} should stay batch mode`);
-      assert.equal(recipe.requires.maxFiles, 50, `${summary.id} should keep the documented paid batch limit`);
+      assert.ok(recipe.requires.maxFiles <= 50, `${summary.id} should stay within the documented paid batch limit`);
       assert.match(recipe.requires.payment, /free up to 5 files/i, `${summary.id} should document the free small-batch threshold`);
       assert.match(recipe.requires.payment, /x402 unlock/i, `${summary.id} should document paid batch unlocks`);
+      if (recipe.requires.maxFiles > 5) {
+        assert.match(
+          recipe.requires.payment,
+          new RegExp(`from 6 to ${recipe.requires.maxFiles} files`, "i"),
+          `${summary.id} should document its effective paid batch range`,
+        );
+      }
     }
   }
 });

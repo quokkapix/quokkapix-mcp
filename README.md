@@ -182,7 +182,7 @@ Optional input:
 }
 ```
 
-When `ruleProfileId` is provided, the QA report includes sourced marketplace checks such as supported formats, dimensions, source type and URL. Visual checks like "white background" are reported as metadata limitations unless the browser result manifest contains enough evidence.
+When `ruleProfileId` is provided, the QA report includes sourced marketplace checks such as supported formats, dimensions, source type and URL. If the browser result manifest includes `outputs[].pixelQa`, the validator also evaluates supported pixel-level visual checks such as white background, subject centering, safe margins and transparent background.
 
 ### `process_images`
 
@@ -690,16 +690,15 @@ Current QA checks include:
 - required warning absence;
 - ZIP entries are represented in the manifest;
 - expected minimum output count for packs.
+- pixel-level checks when the browser manifest contains `outputs[].pixelQa` metrics:
+  - white background;
+  - subject centered;
+  - safe margins;
+  - transparent background.
 
-Some future visual checks are intentionally reported as metadata-only info, not as completed pixel analysis:
+Semantic checks such as watermark presence, promotional text, old-background remnants or subjective cutout quality are not marked as passed without a measurable signal in the manifest.
 
-- white background actually white;
-- product centered;
-- safe margins;
-- watermark visually present;
-- background removal quality.
-
-Those require a future pixel-level analyzer. The runner does not currently pretend to verify them.
+Those require a future semantic analyzer or another explicit measurable signal. The runner does not currently pretend to verify them.
 
 ## Agent Payments And x402
 
@@ -861,7 +860,7 @@ The package whitelist includes only:
 - PDF merge/split/extract expects PDF files. The existing images-to-PDF recipe expects image files.
 - ZIP import works only in batch mode and only extracts supported image files.
 - GIF background removal is not supported.
-- Pixel-level QA for product centering, exact white background and background-removal quality is not implemented yet.
+- Pixel-level QA is deterministic and limited to measurable image facts. It does not claim semantic recognition of text, watermark content or subjective retouching quality.
 - The adapter currently uses Playwright browser automation, not a native image-processing library.
 
 ## Troubleshooting
@@ -886,9 +885,9 @@ Single image runs, single-image scenarios and agent batches up to 5 files are fr
 
 Reduce batch size, resize first, avoid very large images, or use smaller workflows. The runner cannot bypass browser RAM limits.
 
-### QA says visual checks are metadata-only
+### QA reports unsupported visual checks
 
-That is expected. The current QA validator checks machine-readable metadata and declared warnings. Pixel-level visual QA is future work.
+That is expected for semantic visual requirements that cannot be proven from the browser manifest. The validator uses `outputs[].pixelQa` for measurable checks and leaves unsupported semantic checks unclaimed.
 
 ## Related QuokkaPix Agent Files
 
