@@ -16,6 +16,10 @@ Glama listing: <https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp>
 
 mcpservers.org listing: <https://mcpservers.org/servers/quokkapix/quokkapix-mcp>
 
+Browser compatibility matrix: <https://quokkapix.com/en/browser-compatibility/>
+
+Browser benchmark: <https://quokkapix.com/en/browser-image-processing-benchmark/>
+
 Quick start:
 
 ```bash
