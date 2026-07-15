@@ -696,7 +696,7 @@ Current QA checks include:
   - safe margins;
   - transparent background.
 
-Semantic checks such as watermark presence, promotional text, old-background remnants or subjective cutout quality are not marked as passed without a measurable signal in the manifest.
+Semantic checks such as watermark presence, promotional text, old-background remnants or subjective cutout quality are not marked as passed without a measurable signal in the manifest. If a custom QA contract requests an unsupported visual check, the validator reports it as a warning instead of silently treating it as passed.
 
 Those require a future semantic analyzer or another explicit measurable signal. The runner does not currently pretend to verify them.
 

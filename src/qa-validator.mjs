@@ -410,14 +410,31 @@ function addCheck(checks, name, ok, detail = {}) {
 
 function validatePixelVisualChecks(checks, outputs, qa) {
   if (!Array.isArray(qa.visualChecks) || qa.visualChecks.length === 0) return;
+  const requested = qa.visualChecks.map((check) => String(check || "").trim()).filter(Boolean);
+  const supported = new Set(SUPPORTED_PIXEL_VISUAL_CHECKS);
+  const unsupported = requested.filter((check) => !supported.has(check));
+  for (const check of unsupported) {
+    addCheck(checks, `visual_check_unsupported_${check}`, false, {
+      expected: "supported deterministic pixel check",
+      actual: check,
+      severity: "warning",
+    });
+  }
   const evaluated = outputs
     .filter((output) => output.pixelQa)
     .flatMap((output) =>
-      evaluatePixelVisualChecks(output.pixelQa, qa.visualChecks).map((check) => ({
+      evaluatePixelVisualChecks(output.pixelQa, requested).map((check) => ({
         ...check,
         outputName: output.outputName || output.name || "",
       })),
     );
+  if (evaluated.length === 0 && outputs.every((output) => !output.pixelQa)) {
+    addCheck(checks, "pixel_metrics_available", false, {
+      expected: "at least one output with pixelQa",
+      actual: "none",
+      severity: "warning",
+    });
+  }
   const grouped = new Map();
   for (const check of evaluated) {
     const group = grouped.get(check.name) || [];
@@ -434,6 +451,13 @@ function validatePixelVisualChecks(checks, outputs, qa) {
     });
   }
 }
+
+const SUPPORTED_PIXEL_VISUAL_CHECKS = Object.freeze([
+  "white_background",
+  "subject_centered",
+  "safe_margins",
+  "transparent_background",
+]);
 
 function evaluatePixelVisualChecks(pixelQa, visualChecks = []) {
   const requested = new Set(visualChecks.map((check) => String(check || "")));
@@ -530,11 +554,15 @@ function getCheckMessage(name) {
     long_side_dimension_metadata_available: "Long-side check needs output dimensions.",
     min_longest_side: "Longest side is below the sourced minimum.",
     max_longest_side: "Longest side is above the sourced maximum.",
-    visual_check_white_background: "Output background edges should be white.",
-    visual_check_subject_centered: "Detected subject should be centered.",
-    visual_check_safe_margins: "Detected subject should not touch the output edges.",
-    visual_check_transparent_background: "Output should include transparent background pixels.",
+    visual_check_white_background: "The selected recipe expects white background edges.",
+    visual_check_subject_centered: "The selected recipe expects the detected subject to be centered.",
+    visual_check_safe_margins: "The selected recipe expects the detected subject to keep clear margins.",
+    visual_check_transparent_background: "The selected recipe expects transparent background pixels.",
+    pixel_metrics_available: "Pixel-level metrics must be present to evaluate requested visual checks.",
   };
+  if (name.startsWith("visual_check_unsupported_")) {
+    return "Requested visual check is not supported by deterministic pixel QA.";
+  }
   if (name.startsWith("visual_check_")) {
     return "Pixel-level visual check did not meet the threshold.";
   }
@@ -561,10 +589,12 @@ function getCheckRemediation(name) {
   if (name.includes("size_kb")) return "Lower quality, enable target KB, or use WebP/AVIF when allowed.";
   if (name.includes("source_count")) return "Adjust the batch size or add the required number of source files.";
   if (name.includes("output_name")) return "Use the recipe naming preset or batch rename pattern.";
-  if (name === "visual_check_white_background") return "Use a white background preset or rerun background replacement.";
-  if (name === "visual_check_subject_centered") return "Use Crop/Resize fit presets to center the subject.";
-  if (name === "visual_check_safe_margins") return "Increase padding or use Fit instead of Fill before export.";
+  if (name === "visual_check_white_background") return "Use a white background preset when this recipe requires a white canvas.";
+  if (name === "visual_check_subject_centered") return "Use Crop/Resize fit presets only when this recipe requires centered composition.";
+  if (name === "visual_check_safe_margins") return "Increase padding or use Fit only when this recipe requires clear margins.";
   if (name === "visual_check_transparent_background") return "Export as PNG/WebP with transparent background enabled.";
+  if (name === "pixel_metrics_available") return "Use a current browser result manifest with outputs[].pixelQa for visual checks.";
+  if (name.startsWith("visual_check_unsupported_")) return "Remove this visual check or implement a measurable detector before relying on it.";
   if (name.startsWith("warning_absent_")) return "Change settings to remove the reported warning before delivery.";
   if (name.startsWith("zip_entry_") || name === "zip_entries_manifested") {
     return "Use current QuokkaPix batch output so each ZIP entry is recorded.";

@@ -105,6 +105,40 @@ test("QA validator uses browser pixel QA metrics when present", async () => {
   assert.ok(report.checks.some((check) => check.name === "visual_check_safe_margins" && check.ok));
 });
 
+test("QA validator warns about unsupported visual checks instead of ignoring them", () => {
+  const report = validateResultManifest(
+    {
+      status: "done",
+      source: { count: 1, totalBytes: 2048 },
+      outputs: [
+        {
+          outputName: "watermarked.webp",
+          format: "webp",
+          pixelQa: {
+            background: { edgeWhiteRatio: 1, edgeNonWhiteVisibleRatio: 0 },
+          },
+        },
+      ],
+      warnings: [],
+    },
+    {
+      expectedResult: {
+        qa: {
+          profile: "custom-watermark",
+          visualChecks: ["watermark_presence"],
+        },
+      },
+    },
+  );
+
+  assert.equal(report.ok, true);
+  assert.ok(
+    report.checks.some(
+      (check) => check.name === "visual_check_unsupported_watermark_presence" && !check.ok,
+    ),
+  );
+});
+
 test("QA validator reports archive contents and output-pack details", async () => {
   const recipe = {
     id: "social_pack_single",

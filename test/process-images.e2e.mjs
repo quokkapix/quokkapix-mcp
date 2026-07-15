@@ -97,7 +97,6 @@ test("MCP runner processes a logo watermark asset file", { skip: !appUrl }, asyn
     settingsId: "e2e-logo-watermark",
     expectedResultQa: {
       profile: "e2e-logo-watermark",
-      visualChecks: ["watermark_presence"],
     },
     inputFiles: [inputFile],
     watermarkLogoFile: logoFile,

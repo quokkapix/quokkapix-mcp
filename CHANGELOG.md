@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.6
+
+- Report unsupported custom visual QA checks as warnings instead of silently ignoring them.
+- Clarified pixel-level QA messages so agents can distinguish recipe composition requirements from background-removal success.
+- Kept semantic checks such as watermark/text detection unclaimed unless a measurable signal exists.
+- Relaxed recipe-store tests so standalone CI does not fail on unreleased public recipe wording while still enforcing the free small-batch and x402 policy.
+
 ## 0.3.5
 
 - Added `message` and `remediation` fields to QA checks so agents can explain what failed and how to fix it.
