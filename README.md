@@ -2,11 +2,14 @@
 
 [![quokkapix-mcp MCP server](https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp/badges/score.svg)](https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp)
 
-Local MCP adapter for private, browser-based QuokkaPix image workflows.
+Local-first MCP adapter and cloud-to-local execution bridge for private QuokkaPix image workflows.
 
 QuokkaPix MCP Runner lets AI agents process local image files with QuokkaPix by opening the QuokkaPix web app in a local browser, applying an official recipe or direct settings payload, uploading files through the browser file input, downloading the result, and writing a machine-readable `quokkapix-result.json`.
 
-It is designed for MCP-compatible local agents such as Claude Desktop, Cursor, LM Studio/Ollama wrappers, and other desktop or automation clients that can call MCP tools over stdio.
+It supports two compatible modes:
+
+- local `stdio` for Claude Desktop, Cursor, LM Studio/Ollama wrappers and other local MCP clients;
+- `bridge` for remote MCP clients such as Claude web, while Chromium and image processing remain on the user's computer.
 
 Repository: <https://github.com/quokkapix/quokkapix-mcp>
 
@@ -26,6 +29,12 @@ Quick start:
 npx quokkapix-mcp
 ```
 
+Cloud-to-local bridge:
+
+```bash
+npx quokkapix-mcp bridge --input-root ./images --output-root ./quokkapix-output
+```
+
 ## What This Is
 
 This package is a local automation adapter around the browser app at:
@@ -38,12 +47,14 @@ The adapter uses Playwright to drive a local Chromium browser. The browser runs 
 
 Image files are processed in the user's browser runtime. During normal processing, source image bytes are not uploaded to a QuokkaPix image-processing server.
 
+The optional bridge mode connects outward to the QuokkaPix control plane. The remote MCP endpoint relays tool settings, relative file names, status and result metadata. It does not expose an image upload endpoint and does not relay source or output image bytes.
+
 ## What This Is Not
 
 This package is not:
 
 - a public server-side image processing API;
-- a hosted MCP server endpoint;
+- a hosted image-processing service (the remote MCP control plane only coordinates a paired local bridge);
 - a GPU/CPU image-processing backend run by QuokkaPix;
 - a way to pass local file paths to `quokkapix.com` by URL;
 - a replacement for browser memory limits.
@@ -87,6 +98,24 @@ https://quokkapix.com/#agent=1
 downloaded output + quokkapix-result.json
 ```
 
+Remote clients use the same package in bridge mode:
+
+```text
+Claude web / remote MCP client
+        |
+        | OAuth 2.1 + Streamable HTTP (commands and metadata only)
+        v
+QuokkaPix control plane
+        |
+        | outbound authenticated long poll
+        v
+quokkapix-mcp bridge on the user's computer
+        |
+        | Playwright
+        v
+local Chromium -> local output + quokkapix-result.json
+```
+
 The adapter saves:
 
 - the generated image, ZIP, or PDF output;
@@ -101,12 +130,32 @@ The adapter saves:
 - internet access for loading QuokkaPix and browser-side dependencies/models when needed
 - local file paths that the MCP process can read
 
+Bridge mode additionally requires explicit input and output roots. Remote calls cannot read or write outside those roots.
+
 Install dependencies:
 
 ```bash
 npm install
 npx playwright install chromium
 ```
+
+## Remote MCP And Bridge Setup
+
+1. Start the existing package in bridge mode:
+
+```bash
+npx -y quokkapix-mcp bridge \
+  --input-root /absolute/path/to/input \
+  --output-root /absolute/path/to/output
+```
+
+2. Approve the one-time pairing URL printed by the command.
+3. Add `https://quokkapix.com/mcp` as a custom remote MCP connector.
+4. Complete OAuth authorization in the browser.
+
+The bridge stores its random device credential in `~/.quokkapix/bridge.json` with owner-only permissions where the operating system supports them. Use `--pair` to approve another browser session or `--reset` to revoke the old device authorization and create a new credential.
+
+Remote processing paths are relative to `--input-root` and `--output-root`. The bridge rejects path traversal and does not return absolute local paths to the cloud client.
 
 ## MCP Tools
 
@@ -289,6 +338,16 @@ Verifies a paid agent unlock token before processing.
 Use `consume: false` for preflight checks.
 
 Only use `consume: true` if you intentionally want to consume the unlock immediately.
+
+### Remote-only bridge tools
+
+The hosted remote MCP endpoint also exposes:
+
+- `get_bridge_status` to check pairing and local availability;
+- `get_billing_status` to check whether a verified one-time unlock is staged;
+- `set_unlock_token` to stage an x402 unlock for the next paid local batch.
+
+Remote `verify_unlock_token` is preflight-only and never consumes the token. Actual consumption remains inside the local browser start path.
 
 ## Official Recipes
 
@@ -666,9 +725,15 @@ It contains machine-readable local processing facts:
 - warnings;
 - `processingMs`;
 - browser capabilities;
+- optional planned backend routes in `capabilities.backends`;
 - stable `errorCode`.
 
 The manifest does not contain image bytes.
+
+`capabilities.backends` is additive and advisory. The current MCP adapter already
+passes unknown browser manifest fields through unchanged, so this field does not
+require a new adapter release. Continue to use terminal status, `errorCode` and QA
+results to decide whether a run succeeded.
 
 ## QA Validation
 
@@ -729,6 +794,8 @@ The MCP runner can:
 
 The MCP runner does not sign x402 payments itself. An x402-capable client or wallet must obtain the `unlockToken`.
 
+Bridge mode does not add a second fee and WebMCP has no separate charge. A remote client can call `set_unlock_token` once after obtaining an x402 unlock. The control plane keeps that token only in memory, sends it to the paired bridge for one eligible run, and removes it when local processing starts. The browser payment endpoint remains the authority that consumes the unlock.
+
 Always call `get_payment_options` when an agent is unsure whether a run is free or paid. The live response includes `freeBatchMaxFiles`, `paidMinFiles`, `maxFiles`, `price`, `currency`, supported x402 networks and endpoint URLs.
 
 Paid batch workflow for 6-50 files:
@@ -782,6 +849,14 @@ Options:
 ```
 
 The CLI currently runs recipe-based processing. For direct settings, use the MCP tool `process_with_settings`.
+
+Bridge command:
+
+```bash
+npx quokkapix-mcp bridge --input-root ./images --output-root ./quokkapix-output
+```
+
+Use `npx quokkapix-mcp bridge --help` for pairing, config, headed browser and diagnostic options. Running `npx quokkapix-mcp` without `bridge` remains the original stdio MCP server.
 
 ## Tests
 
@@ -849,6 +924,11 @@ The package whitelist includes only:
 - The public website still cannot read arbitrary local paths.
 - Payment tokens should be treated as short-lived secrets.
 - Do not commit real unlock tokens, private files, or local output folders.
+- Bridge device secrets stay in the local config and are stored as hashes by the control plane.
+- OAuth uses authorization code with PKCE, audience-bound access tokens and rotating refresh tokens. Processing tools additionally require the `bridge:execute` scope; `mcp:tools` alone is read-only.
+- Remote file arguments are restricted to configured roots; `..` traversal and out-of-root absolute paths are rejected.
+- The control plane has no image upload route. It receives commands, relative names, status and result metadata.
+- A cloud AI can receive image bytes only if the user separately uploads or shares an output with that AI; bridge mode does not do that automatically.
 
 ## Limitations
 
@@ -862,6 +942,8 @@ The package whitelist includes only:
 - GIF background removal is not supported.
 - Pixel-level QA is deterministic and limited to measurable image facts. It does not claim semantic recognition of text, watermark content or subjective retouching quality.
 - The adapter currently uses Playwright browser automation, not a native image-processing library.
+- In bridge mode the remote client must know relative paths under the configured input root; directory browsing is intentionally not exposed.
+- Active bridge jobs are memory-only and fail closed during a control-plane restart.
 
 ## Troubleshooting
 

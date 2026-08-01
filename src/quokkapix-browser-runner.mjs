@@ -25,6 +25,7 @@ export async function processImagesWithQuokkaPix({
   headless = true,
   timeoutMs = 180000,
   siteRoot,
+  onLifecycle,
 } = {}) {
   const files = normalizeFiles(inputFiles);
   const assetFiles = normalizeAssetFiles({ watermarkLogoFile, backgroundImageFile });
@@ -54,6 +55,7 @@ export async function processImagesWithQuokkaPix({
   const context = await browser.newContext({ acceptDownloads: true });
   const page = await context.newPage();
   try {
+    await emitLifecycle(onLifecycle, "browser_opening", { appUrl: resolvedAppUrl });
     await page.goto(resolvedAppUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
     await page.waitForFunction(() => Boolean(window.QuokkaPixAgent), null, { timeout: timeoutMs });
     if (directSettingsMode) {
@@ -71,8 +73,23 @@ export async function processImagesWithQuokkaPix({
 
     await page.locator('[data-agent="file-picker"]').setInputFiles(files);
     await page.locator('.page-shell[data-agent-status="ready"]').waitFor({ timeout: timeoutMs });
+    await emitLifecycle(onLifecycle, "files_ready", { files: files.length });
 
-    await page.evaluate(() => window.QuokkaPixAgent.start());
+    await page.evaluate(() => {
+      void Promise.resolve(window.QuokkaPixAgent.start()).catch(() => {});
+    });
+    await page.waitForFunction(
+      () => !["ready", "waiting-for-files"].includes(window.QuokkaPixAgent.getState().status),
+      null,
+      { timeout: timeoutMs },
+    );
+    const startedState = await page.evaluate(() => window.QuokkaPixAgent.getState());
+    if (!["blocked", "error", "waiting-for-files", "ready"].includes(startedState.status)) {
+      await emitLifecycle(onLifecycle, "processing_started", {
+        files: files.length,
+        status: startedState.status,
+      });
+    }
     await page
       .locator(
         '.page-shell[data-agent-status="done"], .page-shell[data-agent-status="error"], .page-shell[data-agent-status="cancelled"], .page-shell[data-agent-status="blocked"]',
@@ -222,6 +239,15 @@ function sanitizeFileName(name) {
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
     .replace(/^\.+$/, "quokkapix-output")
     .slice(0, 180);
+}
+
+async function emitLifecycle(handler, event, detail = {}) {
+  if (typeof handler !== "function") return;
+  try {
+    await handler(event, detail);
+  } catch {
+    // Lifecycle reporting must never interrupt local image processing.
+  }
 }
 
 async function saveHrefFromPage({ page, href, outputPath }) {

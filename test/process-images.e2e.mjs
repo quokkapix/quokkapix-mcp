@@ -37,6 +37,9 @@ test("MCP runner processes one image through QuokkaPix browser workflow", { skip
   const manifest = JSON.parse(await fs.readFile(result.manifestPath, "utf8"));
   assert.equal(manifest.status, "done");
   assert.ok(manifest.outputs[0].sizeBytes > 0);
+  assert.equal(manifest.capabilities?.backends?.schemaVersion, "1.0");
+  assert.ok(manifest.capabilities.backends.processing.planned);
+  assert.ok(manifest.capabilities.backends.encoding.planned);
 });
 
 test("MCP runner processes direct custom settings through applySettings", { skip: !appUrl }, async () => {
@@ -120,6 +123,10 @@ test(
     const inputFiles = [
       path.join(root, "automation", "fixtures", "photo-landscape.png"),
       path.join(root, "automation", "fixtures", "photo-portrait.jpg"),
+      path.join(root, "automation", "fixtures", "photo-square.webp"),
+      path.join(root, "automation", "fixtures", "photo-with-metadata.jpg"),
+      path.join(root, "automation", "fixtures", "transparent-product.png"),
+      path.join(root, "automation", "fixtures", "large-4k.png"),
     ];
     const backgroundImageFile = path.join(root, "automation", "fixtures", "photo-square.webp");
     const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "quokkapix-mcp-background-image-batch-e2e-"));
@@ -256,6 +263,10 @@ test(
     const inputFiles = [
       path.join(root, "automation", "fixtures", "photo-landscape.png"),
       path.join(root, "automation", "fixtures", "photo-portrait.jpg"),
+      path.join(root, "automation", "fixtures", "photo-square.webp"),
+      path.join(root, "automation", "fixtures", "photo-with-metadata.jpg"),
+      path.join(root, "automation", "fixtures", "transparent-product.png"),
+      path.join(root, "automation", "fixtures", "large-4k.png"),
     ];
     const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "quokkapix-mcp-invalid-token-e2e-"));
     await assert.rejects(

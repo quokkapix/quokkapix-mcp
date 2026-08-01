@@ -1,9 +1,9 @@
 {
   "name": "quokkapix-mcp",
-  "version": "0.3.6",
+  "version": "0.4.0",
   "private": false,
   "type": "module",
-  "description": "Local MCP adapter for QuokkaPix browser-only image workflows.",
+  "description": "Local-first MCP adapter and cloud-to-local execution bridge for QuokkaPix image workflows.",
   "license": "MIT",
   "homepage": "https://quokkapix.com/mcp-runner.html",
   "repository": {
@@ -36,19 +36,24 @@
     "access": "public"
   },
   "bin": {
-    "quokkapix-mcp": "src/server.mjs",
+    "quokkapix-mcp": "src/entry.mjs",
+    "quokkapix-bridge": "src/bridge-cli.mjs",
     "quokkapix-runner": "src/cli.mjs"
   },
   "scripts": {
-    "check": "node --check src/server.mjs && node --check src/cli.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/rule-store.mjs && node --check src/qa-validator.mjs && node --check src/payment-tools.mjs && node --test test/*.test.mjs",
+    "check": "node --check src/entry.mjs && node --check src/server.mjs && node --check src/cli.mjs && node --check src/bridge-cli.mjs && node --check src/bridge-client.mjs && node --check src/bridge-executor.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/rule-store.mjs && node --check src/qa-validator.mjs && node --check src/payment-tools.mjs && node --test test/*.test.mjs",
     "test": "npm run check",
     "prepublishOnly": "npm run check && npm pack --dry-run",
     "test:e2e": "node --test test/*.e2e.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.18.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "playwright": "^1.61.0",
     "zod": "^4.1.13"
+  },
+  "overrides": {
+    "@hono/node-server": "2.0.12",
+    "fast-uri": "3.1.5"
   },
   "engines": {
     "node": ">=20"

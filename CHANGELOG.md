@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+- Added `quokkapix-mcp bridge` as an additive cloud-to-local mode while preserving the existing stdio server.
+- Added OAuth/PKCE remote MCP pairing, explicit input/output roots and path traversal protection.
+- Added read/execute scope separation, symlink escape checks and remote device revocation through `--reset`.
+- Added local bridge execution for the existing recipe, direct-settings, rule and QA tools without relaying image bytes.
+- Added remote bridge status and one-time x402 unlock staging; the local browser remains responsible for consumption at processing start.
+- Updated the MCP SDK and security-sensitive transitive dependencies.
+
 ## 0.3.6
 
 - Report unsupported custom visual QA checks as warnings instead of silently ignoring them.
