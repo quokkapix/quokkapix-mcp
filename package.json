@@ -41,10 +41,10 @@
     "quokkapix-runner": "src/cli.mjs"
   },
   "scripts": {
-    "check": "node --check src/entry.mjs && node --check src/server.mjs && node --check src/cli.mjs && node --check src/bridge-cli.mjs && node --check src/bridge-client.mjs && node --check src/bridge-executor.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/rule-store.mjs && node --check src/qa-validator.mjs && node --check src/payment-tools.mjs && node --test test/*.test.mjs",
+    "check": "node --check src/entry.mjs && node --check src/server.mjs && node --check src/cli.mjs && node --check src/bridge-cli.mjs && node --check src/bridge-client.mjs && node --check src/bridge-executor.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/rule-store.mjs && node --check src/qa-validator.mjs && node --check src/payment-tools.mjs && node --test test/bridge-client.test.mjs test/payment-tools.test.mjs test/qa-validator.test.mjs test/recipe-store.test.mjs",
     "test": "npm run check",
     "prepublishOnly": "npm run check && npm pack --dry-run",
-    "test:e2e": "node --test test/*.e2e.mjs"
+    "test:e2e": "node --test test/process-images.e2e.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
