@@ -17,10 +17,11 @@ import {
   getAgentPaymentOptions,
   verifyAgentUnlockToken,
 } from "./payment-tools.mjs";
+import { MCP_ADAPTER_VERSION } from "./version.mjs";
 
 const server = new McpServer({
   name: "quokkapix-mcp",
-  version: "0.4.0",
+  version: MCP_ADAPTER_VERSION,
 });
 
 const localFilePathSchema = z

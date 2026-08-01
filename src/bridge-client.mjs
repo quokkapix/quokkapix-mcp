@@ -5,6 +5,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { createBridgeExecutor } from "./bridge-executor.mjs";
+import { MCP_ADAPTER_VERSION } from "./version.mjs";
 
 const CONFIG_VERSION = 1;
 const DEFAULT_CONTROL_PLANE = "https://quokkapix.com";
@@ -12,6 +13,7 @@ const DEFAULT_CONTROL_PLANE = "https://quokkapix.com";
 export async function runBridge(options = {}) {
   const configPath = path.resolve(options.config || defaultConfigPath());
   const existingConfig = await readBridgeConfig(configPath);
+  let config = mergeBridgeConfig(existingConfig, options);
   if (options.reset && existingConfig?.deviceId && existingConfig?.deviceSecret) {
     try {
       await bridgeRequest(
@@ -23,9 +25,11 @@ export async function runBridge(options = {}) {
     } catch (error) {
       options.log?.(`Could not revoke the previous bridge remotely: ${error.message}`);
     }
+    delete config.deviceId;
+    delete config.deviceSecret;
+    delete config.pairing;
   }
-  let config = options.reset ? null : existingConfig;
-  config = mergeBridgeConfig(config, options);
+  await validateBridgeRoots(config);
 
   if (!config?.deviceId || !config?.deviceSecret) {
     config = await registerBridge(config, options);
@@ -35,16 +39,15 @@ export async function runBridge(options = {}) {
       method: "POST",
       body: {},
     });
-    await presentPairing(pairing, options);
+    await presentPairing(pairing, config, options);
   }
 
-  await validateBridgeRoots(config);
   let status = await getPairingStatus(config);
   if (status.status !== "active") {
     if (!config.pairing) {
       throw new Error("Bridge is not approved. Run again with --pair to create a new pairing code.");
     }
-    await presentPairing(config.pairing, options);
+    await presentPairing(config.pairing, config, options);
     status = await waitForApproval(config, config.pairing);
     delete config.pairing;
     await writeBridgeConfig(configPath, config);
@@ -169,6 +172,7 @@ async function registerBridge(baseConfig, options) {
       secret: deviceSecret,
       name: config.name,
       capabilities: {
+        adapterVersion: MCP_ADAPTER_VERSION,
         platform: process.platform,
         arch: process.arch,
         node: process.versions.node,
@@ -177,6 +181,10 @@ async function registerBridge(baseConfig, options) {
       },
     },
   });
+  validatePairingUrl(pairing?.verificationUriComplete, config.controlPlane);
+  if (!/^dev_[A-Za-z0-9_-]{1,120}$/.test(String(pairing?.deviceId || ""))) {
+    throw new Error("Bridge returned an invalid device id.");
+  }
   return {
     ...config,
     version: CONFIG_VERSION,
@@ -213,11 +221,25 @@ async function validateBridgeRoots(config) {
   await fs.mkdir(config.outputRoot, { recursive: true });
 }
 
-async function presentPairing(pairing, options) {
-  const url = pairing.verificationUriComplete;
+async function presentPairing(pairing, config, options) {
+  const url = validatePairingUrl(pairing?.verificationUriComplete, config.controlPlane);
   options.log?.(`Pairing code: ${pairing.code}`);
   options.log?.(`Approve this device: ${url}`);
   if (options.openBrowser !== false) await openExternalUrl(url);
+}
+
+function validatePairingUrl(value, controlPlane) {
+  let pairingUrl;
+  try {
+    pairingUrl = new URL(String(value || ""));
+  } catch {
+    throw new Error("Bridge returned an invalid pairing URL.");
+  }
+  const controlPlaneUrl = new URL(normalizeControlPlane(controlPlane));
+  if (pairingUrl.origin !== controlPlaneUrl.origin) {
+    throw new Error("Bridge pairing URL must use the configured control-plane origin.");
+  }
+  return pairingUrl.toString();
 }
 
 async function waitForApproval(config, pairing) {
@@ -245,7 +267,7 @@ async function pollJobs(config, executor, options) {
         signal: options.signal,
       });
       retryMs = 1000;
-      if (job) await executeJob(config, executor, job, options);
+      if (job) await executeBridgeJob(config, executor, job, options);
       if (options.once) return;
     } catch (error) {
       if (options.signal?.aborted) return;
@@ -257,9 +279,10 @@ async function pollJobs(config, executor, options) {
   }
 }
 
-async function executeJob(config, executor, job, options) {
-  await jobRequest(config, job, "start", {});
+export async function executeBridgeJob(config, executor, job, options = {}) {
+  await retryJobRequest(config, job, "start", {}, 3);
   options.log?.(`Running ${job.tool} (${job.id})`);
+  let completion;
   try {
     const result = await executor.execute(job.tool, job.args, {
       jobId: job.id,
@@ -269,29 +292,34 @@ async function executeJob(config, executor, job, options) {
         }
       },
     });
-    await retryComplete(config, job, { ok: true, result });
-    options.log?.(`Completed ${job.id}`);
+    completion = { ok: true, result };
   } catch (error) {
-    await retryComplete(config, job, {
+    completion = {
       ok: false,
       error: {
         code: String(error?.code || "bridge-execution-failed").slice(0, 80),
         message: sanitizeRemoteErrorMessage(error?.message || error, config).slice(0, 500),
       },
-    });
-    options.log?.(`Failed ${job.id}: ${error?.message || error}`);
+    };
   }
+  await retryComplete(config, job, completion);
+  if (completion.ok) options.log?.(`Completed ${job.id}`);
+  else options.log?.(`Failed ${job.id}: ${completion.error.message}`);
 }
 
 async function retryComplete(config, job, payload) {
+  return retryJobRequest(config, job, "complete", payload, 6);
+}
+
+async function retryJobRequest(config, job, action, payload, attempts) {
   let lastError;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
     try {
-      await jobRequest(config, job, "complete", payload);
+      await jobRequest(config, job, action, payload);
       return;
     } catch (error) {
       lastError = error;
-      await delay(500 * 2 ** attempt);
+      if (attempt + 1 < attempts) await delay(Math.min(8_000, 500 * 2 ** attempt));
     }
   }
   throw lastError;
@@ -361,6 +389,9 @@ function sanitizeRemoteErrorMessage(value, config) {
   for (const [root, replacement] of [
     [config.inputRoot, "input://"],
     [config.outputRoot, "output://"],
+    [os.homedir(), "home://"],
+    [os.tmpdir(), "temp://"],
+    [process.cwd(), "cwd://"],
   ]) {
     if (!root) continue;
     message = message.split(String(root)).join(replacement);

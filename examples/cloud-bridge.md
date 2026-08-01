@@ -21,3 +21,6 @@ The existing local mode is unchanged:
 ```bash
 npx -y quokkapix-mcp
 ```
+
+Use `0.4.1` or newer for bridge mode. The bridge keeps a bounded local queue and
+retries lifecycle/result delivery across transient control-plane failures.

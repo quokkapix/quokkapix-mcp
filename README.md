@@ -875,7 +875,9 @@ This checks:
 - payment helper tools;
 - CLI parser.
 
-GitHub Actions runs the same `npm run check` and `npm pack --dry-run` on pushes and pull requests.
+GitHub Actions runs the same checks on Node 20 and Node 24 on Windows and Linux.
+The Linux/Node 24 job also uploads the generated `.tgz` as a short-lived workflow
+artifact, so a green run verifies the actual package archive.
 
 End-to-end browser processing test against an already running QuokkaPix app:
 
@@ -903,6 +905,13 @@ Before publishing or tagging a release:
 npm run check
 npm pack --dry-run
 ```
+
+Pushing an audited `vX.Y.Z` tag runs `.github/workflows/release.yml`, builds the
+package again and attaches the `.tgz` to a GitHub Release. npm publication is a
+separate manual workflow. Configure npm Trusted Publisher for this repository,
+workflow `publish-npm.yml` and GitHub environment `npm`, then run **Publish npm
+package** with the existing release tag. The workflow uses OIDC and does not
+store an npm token in the repository.
 
 The package whitelist includes only:
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.1
+
+- Hardened remote bridge job leases, idempotent starts and completion reporting across transient network failures.
+- Added bounded MCP sessions, per-device job queues, OAuth registrations, pending devices and refresh grants.
+- Added large metadata-result support for 50-file batches without adding an image upload route.
+- Reduced control-plane disk writes by keeping bridge heartbeat timestamps in memory.
+- Restricted browser pairing links to the configured control-plane origin.
+- Expanded security tests for origin checks, one-time pairing, secret persistence, session limits, queue limits and large results.
+
 ## 0.4.0
 
 - Added `quokkapix-mcp bridge` as an additive cloud-to-local mode while preserving the existing stdio server.
