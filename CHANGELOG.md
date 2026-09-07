@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.3
+
+- Updated vulnerable transitive URL, request-parsing and network-address dependencies before npm publication.
+
 ## 0.4.2
 
 - Make `verify_unlock_token` preflight-only so an unlock cannot be consumed before browser processing starts.

@@ -1,6 +1,6 @@
 {
   "name": "quokkapix-mcp",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": false,
   "type": "module",
   "description": "Local-first MCP adapter and cloud-to-local execution bridge for QuokkaPix image workflows.",
@@ -53,7 +53,7 @@
   },
   "overrides": {
     "@hono/node-server": "2.0.12",
-    "fast-uri": "3.1.5"
+    "fast-uri": "3.1.6"
   },
   "engines": {
     "node": ">=20"
