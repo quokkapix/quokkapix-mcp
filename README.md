@@ -333,11 +333,8 @@ Important: this local MCP adapter does not sign x402 payments by itself. An x402
 
 ### `verify_unlock_token`
 
-Verifies a paid agent unlock token before processing.
-
-Use `consume: false` for preflight checks.
-
-Only use `consume: true` if you intentionally want to consume the unlock immediately.
+Safely verifies a paid agent unlock token before processing without consuming it.
+The adapter deliberately has no pre-consume option: the one-time unlock is consumed only by the browser start path after validation succeeds.
 
 ### Remote-only bridge tools
 
@@ -803,7 +800,7 @@ Paid batch workflow for 6-50 files:
 1. Call `get_payment_options`.
 2. Use an x402-capable client to call `/api/agent-unlock/coinbase-x402`.
 3. Read `unlockToken` from the paid response.
-4. Optional: call `verify_unlock_token` with `consume: false`. The adapter fetches current `/api/agent-payment/options` first and uses the live `scope`, `price` and `currency` unless you explicitly override them.
+4. Optional: call `verify_unlock_token`. It is always a non-consuming preflight and uses live `scope`, `price` and `currency` unless explicitly overridden.
 5. Call `process_images` or `process_with_settings` and pass `unlockToken`.
 
 Example:

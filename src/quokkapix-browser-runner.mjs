@@ -26,6 +26,7 @@ export async function processImagesWithQuokkaPix({
   timeoutMs = 180000,
   siteRoot,
   onLifecycle,
+  agentClient = "local-mcp",
 } = {}) {
   const files = normalizeFiles(inputFiles);
   const assetFiles = normalizeAssetFiles({ watermarkLogoFile, backgroundImageFile });
@@ -36,7 +37,7 @@ export async function processImagesWithQuokkaPix({
     throw new Error("outputDir is required.");
   }
   const resolvedOutputDir = path.resolve(String(outputDir));
-  const resolvedAppUrl = assertAllowedAppUrl(appUrl);
+  const resolvedAppUrl = withAgentClient(assertAllowedAppUrl(appUrl), agentClient);
   await fs.mkdir(resolvedOutputDir, { recursive: true });
 
   const directSettingsMode = Boolean(settings);
@@ -239,6 +240,15 @@ function sanitizeFileName(name) {
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
     .replace(/^\.+$/, "quokkapix-output")
     .slice(0, 180);
+}
+
+function withAgentClient(appUrl, agentClient) {
+  const url = new URL(appUrl);
+  const params = new URLSearchParams(url.hash.replace(/^#/, ""));
+  params.set("agent", "1");
+  params.set("agent-client", ["local-mcp", "bridge"].includes(agentClient) ? agentClient : "local-mcp");
+  url.hash = params.toString();
+  return url.toString();
 }
 
 async function emitLifecycle(handler, event, detail = {}) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2
+
+- Make `verify_unlock_token` preflight-only so an unlock cannot be consumed before browser processing starts.
+- Tag browser processing telemetry as local MCP or remote bridge usage.
+- Reject already-consumed unlocks during all preflight checks.
+
 ## 0.4.1
 
 - Hardened remote bridge job leases, idempotent starts and completion reporting across transient network failures.

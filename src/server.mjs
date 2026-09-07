@@ -333,7 +333,7 @@ server.registerTool(
         .describe("Maximum processing timeout in milliseconds. Use a larger value for background AI or large batches."),
     },
   },
-  async (input) => jsonResult(await processImagesWithQuokkaPix(input)),
+  async (input) => jsonResult(await processImagesWithQuokkaPix({ ...input, agentClient: "local-mcp" })),
 );
 
 server.registerTool(
@@ -383,7 +383,7 @@ server.registerTool(
         .describe("Maximum processing timeout in milliseconds."),
     },
   },
-  async (input) => jsonResult(await processImagesWithQuokkaPix(input)),
+  async (input) => jsonResult(await processImagesWithQuokkaPix({ ...input, agentClient: "local-mcp" })),
 );
 
 server.registerTool(
@@ -417,7 +417,7 @@ server.registerTool(
   {
     title: "Verify QuokkaPix agent unlock token",
     description:
-      "Verify a QuokkaPix paid agent unlock token before processing. Use consume=false for safe preflight checks. Use consume=true only immediately before a paid batch/scenario run above the free limit when you intentionally want to consume the unlock. If scope, price or currency are omitted, the tool reads live payment options first.",
+      "Safely preflight a QuokkaPix paid agent unlock token without consuming it. The browser consumes the one-time unlock only when the paid batch actually starts. If scope, price or currency are omitted, the tool reads live payment options first.",
     inputSchema: {
       token: z.string().min(16).describe("Unlock token returned by the paid x402 unlock endpoint."),
       baseUrl: baseUrlSchema,
@@ -429,13 +429,9 @@ server.registerTool(
         .optional()
         .describe("Run mode to verify against the unlock token."),
       files: z.number().int().min(1).max(50).optional().describe("Number of files intended for the paid run."),
-      consume: z
-        .boolean()
-        .optional()
-        .describe("False for preflight verification. True consumes the unlock and should be used only at run start."),
     },
   },
-  async (input) => jsonResult(await verifyAgentUnlockToken(input)),
+  async (input) => jsonResult(await verifyAgentUnlockToken({ ...input, consume: false })),
 );
 
 const transport = new StdioServerTransport();

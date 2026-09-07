@@ -1,6 +1,6 @@
 {
   "name": "quokkapix-mcp",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": false,
   "type": "module",
   "description": "Local-first MCP adapter and cloud-to-local execution bridge for QuokkaPix image workflows.",

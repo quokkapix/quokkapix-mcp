@@ -22,7 +22,6 @@ export async function verifyAgentUnlockToken({
   currency,
   mode = "batch",
   files = 1,
-  consume = false,
 } = {}) {
   if (!token) {
     throw new Error("token is required.");
@@ -49,7 +48,7 @@ export async function verifyAgentUnlockToken({
       currency: resolvedCurrency,
       mode,
       files,
-      consume,
+      consume: false,
     }),
   });
   const body = await readJsonResponse(response);

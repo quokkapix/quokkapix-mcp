@@ -105,6 +105,7 @@ async function processBridgeImages(args, options) {
     headless: args.headless ?? options.headless ?? true,
     timeoutMs: args.timeoutMs,
     onLifecycle: options.onLifecycle,
+    agentClient: "bridge",
   });
 
   return redactLocalPaths(result, { inputRoot, outputRoot });

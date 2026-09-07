@@ -22,5 +22,5 @@ The existing local mode is unchanged:
 npx -y quokkapix-mcp
 ```
 
-Use `0.4.1` or newer for bridge mode. The bridge keeps a bounded local queue and
+Use `0.4.2` or newer for bridge mode with channel-aware analytics and safe unlock preflight. The bridge keeps a bounded local queue and
 retries lifecycle/result delivery across transient control-plane failures.
