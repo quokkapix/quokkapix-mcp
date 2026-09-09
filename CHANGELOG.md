@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0
+
+- Added Video recipe, rule, QA and processing tools to the OAuth-protected remote MCP endpoint.
+- Extended the cloud-to-local bridge to execute `process_video` and `process_video_with_settings` while keeping source, music and output bytes on the paired device.
+- Added Video capability negotiation so the control plane rejects incompatible older bridge clients with an explicit upgrade response.
+- Added a dedicated Video Editor URL override and safe relative-path handling for source video, optional music and output directories.
+- Kept `bridge:execute` as the single execution permission and updated its consent language to cover both Image and Video.
+- Increased the configurable bridge-job ceiling to one hour for longer local video and transcription work.
+- Updated public agent contracts and MCP documentation for one Image + Video remote bridge.
+
 ## 0.5.0
 
 - Added local MCP processing for the QuokkaPix Video surface without changing existing Image tools.

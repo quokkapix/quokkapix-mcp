@@ -88,6 +88,9 @@ export function parseBridgeArgs(argv = []) {
       case "--app-url":
         options.appUrl = next();
         break;
+      case "--video-app-url":
+        options.videoAppUrl = next();
+        break;
       case "--name":
         options.name = next();
         break;
@@ -123,14 +126,15 @@ export function bridgeHelpText() {
   return `QuokkaPix cloud-to-local execution bridge
 
 Usage:
-  quokkapix-mcp bridge --input-root ./images --output-root ./quokkapix-output
+  quokkapix-mcp bridge --input-root ./media --output-root ./quokkapix-output
 
 Options:
-  --input-root       Only files inside this directory can be processed remotely.
+  --input-root       Only images, videos and optional audio inside this directory can be processed remotely.
   --output-root      Results are written only inside this directory.
   --control-plane    Control plane URL, default https://quokkapix.com.
   --name             Device name shown during OAuth authorization.
-  --app-url          QuokkaPix browser URL override for trusted development.
+  --app-url          Image Editor URL override for trusted development.
+  --video-app-url    Video Editor URL override for trusted development.
   --config           Local bridge config path.
   --headed           Show Chromium while processing.
   --no-open          Print the pairing URL without opening it.
@@ -171,14 +175,7 @@ async function registerBridge(baseConfig, options) {
     body: {
       secret: deviceSecret,
       name: config.name,
-      capabilities: {
-        adapterVersion: MCP_ADAPTER_VERSION,
-        platform: process.platform,
-        arch: process.arch,
-        node: process.versions.node,
-        localBrowserProcessing: true,
-        imageBytesRelayed: false,
-      },
+      capabilities: bridgeCapabilities(),
     },
   });
   validatePairingUrl(pairing?.verificationUriComplete, config.controlPlane);
@@ -207,6 +204,7 @@ function mergeBridgeConfig(current, options) {
     inputRoot,
     outputRoot,
     appUrl: options.appUrl || current?.appUrl || "https://quokkapix.com/#agent=1",
+    videoAppUrl: options.videoAppUrl || current?.videoAppUrl || "https://video.quokkapix.com/#agent=1",
     name: String(options.name || current?.name || `${os.hostname()} QuokkaPix bridge`).slice(0, 80),
     headless: options.headless ?? current?.headless ?? true,
   };
@@ -262,7 +260,7 @@ async function pollJobs(config, executor, options) {
     try {
       const job = await bridgeRequest(config, `/bridge/v1/devices/${encodeURIComponent(config.deviceId)}/poll`, {
         method: "POST",
-        body: { waitMs: options.once ? 0 : 25_000 },
+        body: { waitMs: options.once ? 0 : 25_000, capabilities: bridgeCapabilities() },
         allowNoContent: true,
         signal: options.signal,
       });
@@ -277,6 +275,20 @@ async function pollJobs(config, executor, options) {
       if (options.once) throw error;
     }
   }
+}
+
+function bridgeCapabilities() {
+  return {
+    adapterVersion: MCP_ADAPTER_VERSION,
+    platform: process.platform,
+    arch: process.arch,
+    node: process.versions.node,
+    localBrowserProcessing: true,
+    surfaces: ["image", "video"],
+    imageBytesRelayed: false,
+    videoBytesRelayed: false,
+    mediaBytesRelayed: false,
+  };
 }
 
 export async function executeBridgeJob(config, executor, job, options = {}) {

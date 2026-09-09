@@ -461,7 +461,7 @@ server.registerTool("process_video", {
     outputDir: outputDirSchema,
     appUrl: appUrlSchema.describe("Optional Video app URL. Defaults to https://video.quokkapix.com/#agent=1."),
     headless: z.boolean().optional(),
-    timeoutMs: z.number().int().min(10000).max(1800000).optional(),
+    timeoutMs: z.number().int().min(10000).max(3600000).optional(),
   },
 }, async (input) => jsonResult(await processVideoWithQuokkaPix(input)));
 
@@ -476,7 +476,7 @@ server.registerTool("process_video_with_settings", {
     outputDir: outputDirSchema,
     appUrl: appUrlSchema.describe("Optional Video app URL. Defaults to https://video.quokkapix.com/#agent=1."),
     headless: z.boolean().optional(),
-    timeoutMs: z.number().int().min(10000).max(1800000).optional(),
+    timeoutMs: z.number().int().min(10000).max(3600000).optional(),
   },
 }, async (input) => jsonResult(await processVideoWithQuokkaPix(input)));
 

@@ -10,6 +10,15 @@ import {
   validateRuleProfile,
 } from "./rule-store.mjs";
 import { validateResultManifest } from "./qa-validator.mjs";
+import { processVideoWithQuokkaPix } from "./quokkapix-video-browser-runner.mjs";
+import { validateVideoResultManifest } from "./video-qa-validator.mjs";
+import {
+  getVideoRecipe,
+  getVideoRuleProfile,
+  listVideoRecipes,
+  listVideoRuleProfiles,
+  validateVideoRecipe,
+} from "./video-store.mjs";
 
 export function createBridgeExecutor(options = {}) {
   const inputRoot = path.resolve(String(options.inputRoot || ""));
@@ -46,12 +55,55 @@ export async function executeBridgeTool(tool, args = {}, options = {}) {
     }
     case "validate_result_manifest":
       return validateBridgeResult(args);
+    case "list_video_recipes":
+      return listVideoRecipes();
+    case "get_video_recipe":
+      return getVideoRecipe(requireText(args.id, "id"));
+    case "validate_video_recipe":
+      return validateVideoRecipe(args.recipe);
+    case "list_video_rule_profiles":
+      return listVideoRuleProfiles();
+    case "get_video_rule_profile":
+      return getVideoRuleProfile(requireText(args.id, "id"));
+    case "validate_video_result_manifest":
+      return validateBridgeVideoResult(args);
     case "process_images":
     case "process_with_settings":
       return processBridgeImages(args, options);
+    case "process_video":
+    case "process_video_with_settings":
+      return processBridgeVideo(args, options);
     default:
       throw bridgeError("unsupported-bridge-tool", `Unsupported bridge tool: ${tool}`);
   }
+}
+
+async function processBridgeVideo(args, options) {
+  const inputRoot = path.resolve(String(options.inputRoot || ""));
+  const outputRoot = path.resolve(String(options.outputRoot || ""));
+  await fs.mkdir(outputRoot, { recursive: true });
+  const inputFile = await resolveRequiredInput(inputRoot, args.inputFile, "inputFile");
+  const musicFile = await resolveOptionalInput(inputRoot, args.musicFile, "musicFile");
+  const requestedOutput = String(args.outputDir || `job-${sanitizeJobId(options.jobId)}`);
+  const outputDir = resolveWithinRoot(outputRoot, requestedOutput, "outputDir");
+  await assertOutputPathWithinRoot(outputRoot, outputDir);
+  await fs.mkdir(outputDir, { recursive: true });
+  await assertExistingPathWithinRoot(outputRoot, outputDir, "outputDir");
+
+  const result = await processVideoWithQuokkaPix({
+    recipeId: args.recipeId,
+    recipe: args.recipe,
+    settings: args.settings,
+    settingsId: args.settingsId,
+    inputFile,
+    musicFile,
+    outputDir,
+    appUrl: options.videoAppUrl,
+    headless: args.headless ?? options.headless ?? true,
+    timeoutMs: args.timeoutMs,
+    onLifecycle: options.onLifecycle,
+  });
+  return redactLocalPaths(result, { inputRoot, outputRoot });
 }
 
 export function resolveWithinRoot(root, candidate, label = "path") {
@@ -123,6 +175,16 @@ async function validateBridgeResult(args) {
     expectedResult: { ...(selectedRecipe.expectedResult || {}), qa },
   };
   return { ...validateResultManifest(args.manifest, mergedRecipe), ruleProfile };
+}
+
+async function validateBridgeVideoResult(args) {
+  const selectedRecipe = args.recipe || (args.recipeId ? await getVideoRecipe(args.recipeId) : null);
+  return validateVideoResultManifest(args.manifest, selectedRecipe);
+}
+
+async function resolveRequiredInput(root, candidate, label) {
+  if (!candidate) throw bridgeError("local-input-required", `${label} is required.`);
+  return resolveOptionalInput(root, candidate, label);
 }
 
 async function resolveOptionalInput(root, candidate, label) {

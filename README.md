@@ -2,14 +2,14 @@
 
 [![quokkapix-mcp MCP server](https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp/badges/score.svg)](https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp)
 
-Local-first MCP adapter for private QuokkaPix Image and Video workflows, plus the existing cloud-to-local bridge for Image.
+Local-first MCP adapter and cloud-to-local bridge for private QuokkaPix Image and Video workflows.
 
 QuokkaPix MCP Runner lets AI agents process local images and videos by opening the matching QuokkaPix browser surface, applying an official recipe or direct settings, selecting local files through the browser input, saving the output, and writing a machine-readable result manifest. Image runs write `quokkapix-result.json`; Video runs write `quokkapix-video-result.json`.
 
 It supports two compatible modes:
 
 - local `stdio` for Image and Video in Claude Desktop, Cursor, LM Studio/Ollama wrappers and other local MCP clients;
-- `bridge` for remote Image MCP clients such as Claude web, while Chromium and image processing remain on the user's computer. Remote Video execution is not included in version 0.5.0.
+- `bridge` for remote Image and Video MCP clients such as Claude web, while Chromium and all media processing remain on the user's computer.
 
 Repository: <https://github.com/quokkapix/quokkapix-mcp>
 
@@ -36,7 +36,7 @@ npx quokkapix-mcp
 Cloud-to-local bridge:
 
 ```bash
-npx quokkapix-mcp bridge --input-root ./images --output-root ./quokkapix-output
+npx quokkapix-mcp bridge --input-root ./media --output-root ./quokkapix-output
 ```
 
 ## What This Is
@@ -52,15 +52,15 @@ The adapter uses Playwright to drive local Chromium. Image uses `window.QuokkaPi
 
 Image, video and audio files are processed in the user's browser runtime. Source media bytes are not uploaded to a QuokkaPix processing server. Local transcription may download and cache Whisper model files, but does not upload the selected media with that model request.
 
-The optional bridge mode connects outward to the QuokkaPix control plane. The remote MCP endpoint relays tool settings, relative file names, status and result metadata. It does not expose an image upload endpoint and does not relay source or output image bytes.
+The optional bridge mode connects outward to the QuokkaPix control plane. The remote MCP endpoint relays tool settings, relative file names, status and result metadata. It has no media upload endpoint and does not relay source image, video, audio or output bytes.
 
 ## What This Is Not
 
 This package is not:
 
-- a public server-side image processing API;
-- a hosted image-processing service (the remote MCP control plane only coordinates a paired local bridge);
-- a GPU/CPU image-processing backend run by QuokkaPix;
+- a public server-side media processing API;
+- a hosted media-processing service (the remote MCP control plane only coordinates a paired local bridge);
+- a GPU/CPU media-processing backend run by QuokkaPix;
 - a way to pass local file paths to `quokkapix.com` by URL;
 - a replacement for browser memory limits.
 
@@ -83,7 +83,7 @@ Use this adapter when an AI agent needs repeatable media workflows like:
 - generate TXT, SRT or VTT transcripts locally, or burn subtitles into MP4;
 - prepare sourced YouTube, TikTok Ads and Meta Reels video profiles.
 
-The main value is privacy and low infrastructure cost: the agent gets a practical image workflow tool, while image processing remains local in the user's browser.
+The main value is privacy and low infrastructure cost: the agent gets practical Image and Video workflow tools, while media processing remains local in the user's browser.
 
 ## Architecture
 
@@ -98,13 +98,13 @@ quokkapix-mcp
         v
 local Chromium browser
         |
-        | window.QuokkaPixAgent + stable data-agent selectors
+        | window.QuokkaPixAgent or window.QuokkaPixVideoAgent
         v
-https://quokkapix.com/#agent=1
+quokkapix.com or video.quokkapix.com
         |
         | local browser processing
         v
-downloaded output + quokkapix-result.json
+downloaded output + surface-specific result manifest
 ```
 
 Remote clients use the same package in bridge mode:
@@ -122,13 +122,13 @@ quokkapix-mcp bridge on the user's computer
         |
         | Playwright
         v
-local Chromium -> local output + quokkapix-result.json
+local Chromium -> local output + quokkapix-result.json or quokkapix-video-result.json
 ```
 
-The adapter saves:
+Depending on the selected surface, the adapter saves:
 
-- the generated image, ZIP, or PDF output;
-- `quokkapix-result.json`;
+- the generated image, ZIP, PDF, video, audio or transcript output;
+- `quokkapix-result.json` or `quokkapix-video-result.json`;
 - a `qa` object returned to the agent.
 
 ## Requirements
@@ -277,7 +277,7 @@ Audio mix example:
 }
 ```
 
-Video is currently available through local stdio MCP only. The remote MCP and bridge remain Image-only until the separate remote Video phase.
+Version 0.6.0 exposes the same Video discovery, validation and processing tools through the OAuth-protected remote MCP and paired local bridge. Remote `inputFile`, optional `musicFile` and `outputDir` values are relative to the configured roots; their bytes never pass through the control plane. Bridges older than 0.6.0 receive an explicit upgrade error for Video calls.
 
 ### `process_images`
 
@@ -391,6 +391,8 @@ The hosted remote MCP endpoint also exposes:
 - `set_unlock_token` to stage an x402 unlock for the next paid local batch.
 
 Remote `verify_unlock_token` is preflight-only and never consumes the token. Actual consumption remains inside the local browser start path.
+
+The hosted endpoint also relays all Image and Video recipe, rule, QA and processing tools listed above. Both `process_video` and `process_video_with_settings` require the OAuth `bridge:execute` scope. Video workflows do not use the Image batch x402 gate.
 
 ## Official Recipes
 
@@ -896,7 +898,7 @@ The CLI currently runs recipe-based processing. For direct settings, use the MCP
 Bridge command:
 
 ```bash
-npx quokkapix-mcp bridge --input-root ./images --output-root ./quokkapix-output
+npx quokkapix-mcp bridge --input-root ./media --output-root ./quokkapix-output
 ```
 
 Use `npx quokkapix-mcp bridge --help` for pairing, config, headed browser and diagnostic options. Running `npx quokkapix-mcp` without `bridge` remains the original stdio MCP server.
@@ -970,17 +972,17 @@ The package whitelist includes only:
 
 ## Security And Privacy Notes
 
-- Source image files are read from local paths by the MCP runner.
+- Source image, video and optional music files are read from local paths by the MCP runner.
 - Files are uploaded only into the local browser page through Playwright.
-- QuokkaPix browser processing does not upload source images to a QuokkaPix processing server.
+- QuokkaPix browser processing does not upload source media to a QuokkaPix processing server.
 - The public website still cannot read arbitrary local paths.
 - Payment tokens should be treated as short-lived secrets.
 - Do not commit real unlock tokens, private files, or local output folders.
 - Bridge device secrets stay in the local config and are stored as hashes by the control plane.
 - OAuth uses authorization code with PKCE, audience-bound access tokens and rotating refresh tokens. Processing tools additionally require the `bridge:execute` scope; `mcp:tools` alone is read-only.
 - Remote file arguments are restricted to configured roots; `..` traversal and out-of-root absolute paths are rejected.
-- The control plane has no image upload route. It receives commands, relative names, status and result metadata.
-- A cloud AI can receive image bytes only if the user separately uploads or shares an output with that AI; bridge mode does not do that automatically.
+- The control plane has no media upload route. It receives commands, relative names, status and result metadata.
+- A cloud AI can receive media bytes only if the user separately uploads or shares an output with that AI; bridge mode does not do that automatically.
 
 ## Limitations
 

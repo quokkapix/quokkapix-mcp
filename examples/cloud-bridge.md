@@ -4,7 +4,7 @@ Start the same `quokkapix-mcp` package in bridge mode:
 
 ```bash
 npx -y quokkapix-mcp bridge \
-  --input-root /absolute/path/to/images \
+  --input-root /absolute/path/to/media \
   --output-root /absolute/path/to/quokkapix-output
 ```
 
@@ -14,7 +14,7 @@ Approve the printed pairing URL, then add this remote MCP URL to the cloud clien
 https://quokkapix.com/mcp
 ```
 
-The remote client authenticates with OAuth authorization code plus PKCE. Read tools use `mcp:tools`; processing and staged unlocks additionally require `bridge:execute`. Tool calls may contain settings and relative file names, but image bytes stay in the local browser workflow. Paths outside the configured roots are rejected.
+The remote client authenticates with OAuth authorization code plus PKCE. Read tools use `mcp:tools`; Image and Video processing plus staged Image-batch unlocks additionally require `bridge:execute`. Tool calls may contain settings and relative file names, but image, video, audio and output bytes stay in the local browser workflow. Paths outside the configured roots are rejected.
 
 The existing local mode is unchanged:
 
@@ -22,5 +22,5 @@ The existing local mode is unchanged:
 npx -y quokkapix-mcp
 ```
 
-Use `0.4.2` or newer for bridge mode with channel-aware analytics and safe unlock preflight. The bridge keeps a bounded local queue and
+Use `0.6.0` or newer for Image and Video bridge mode with capability negotiation, channel-aware analytics and safe Image-batch unlock preflight. The bridge keeps a bounded local queue and
 retries lifecycle/result delivery across transient control-plane failures.

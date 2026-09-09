@@ -1,9 +1,9 @@
 {
   "name": "quokkapix-mcp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": false,
   "type": "module",
-  "description": "Local-first MCP adapter for QuokkaPix image and video workflows, with an image cloud-to-local bridge.",
+  "description": "Local-first MCP adapter and cloud-to-local bridge for QuokkaPix image and video workflows.",
   "license": "MIT",
   "homepage": "https://quokkapix.com/mcp-runner.html",
   "repository": {

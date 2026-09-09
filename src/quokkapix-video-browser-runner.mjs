@@ -42,6 +42,7 @@ export async function processVideoWithQuokkaPix({ recipe, recipeId, settings, se
     }
 
     await lifecycle(onLifecycle, "files_ready", { surface: "video", files: 1, musicFile: Boolean(musicPath) });
+    await lifecycle(onLifecycle, "processing_started", { surface: "video", tool: workflow.settings?.tool || null });
     await startAndWait(page, timeoutMs);
     let manifest = await page.evaluate(() => window.QuokkaPixVideoAgent.getResultManifest());
     if (workflow.settings?.tool === "transcribe" && workflow.settings?.transcribe?.burn?.enabled && manifest.outputKind === "transcript") {

@@ -23,12 +23,15 @@ test("bridge CLI keeps local stdio separate and parses explicit roots", () => {
     "./input",
     "--output-root",
     "./output",
+    "--video-app-url",
+    "http://127.0.0.1:4181/#agent=1",
     "--headed",
     "--no-open",
     "--once",
   ]);
   assert.equal(options.inputRoot, "./input");
   assert.equal(options.outputRoot, "./output");
+  assert.equal(options.videoAppUrl, "http://127.0.0.1:4181/#agent=1");
   assert.equal(options.headless, false);
   assert.equal(options.openBrowser, false);
   assert.equal(options.once, true);
@@ -150,10 +153,14 @@ test("bridge pairs, stores its secret locally and polls without sending image by
 
     const pairingRequest = requests.find((entry) => entry.url === "/bridge/v1/pairings");
     assert.equal(pairingRequest.body.capabilities.imageBytesRelayed, false);
-    assert.equal(pairingRequest.body.capabilities.adapterVersion, "0.5.0");
+    assert.equal(pairingRequest.body.capabilities.adapterVersion, "0.6.0");
+    assert.deepEqual(pairingRequest.body.capabilities.surfaces, ["image", "video"]);
+    assert.equal(pairingRequest.body.capabilities.videoBytesRelayed, false);
+    assert.equal(pairingRequest.body.capabilities.mediaBytesRelayed, false);
     assert.equal("inputFiles" in pairingRequest.body, false);
     const pollRequest = requests.find((entry) => entry.url.endsWith("/poll"));
     assert.match(pollRequest.authorization, /^Bridge dev_test\./);
+    assert.deepEqual(pollRequest.body.capabilities.surfaces, ["image", "video"]);
 
     await runBridge({
       controlPlane,

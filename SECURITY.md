@@ -15,14 +15,14 @@ Set `QUOKKAPIX_ALLOW_CUSTOM_APP_URL=1` only for trusted development or staging p
 
 Do not put wallet secrets, x402 payment credentials or private media files in recipes, issue reports or public logs. Pass paid unlock tokens at runtime and treat them as short-lived credentials.
 
-Video processing is available in local stdio mode. Remote MCP and bridge execution remain Image-only in version 0.5.0.
+Image and Video processing are available in local stdio and remote bridge modes in version 0.6.0. The remote control plane coordinates jobs but never receives source or output media bytes.
 
 For bridge mode:
 
 - configure the narrowest practical `--input-root` and a separate `--output-root`;
 - treat `~/.quokkapix/bridge.json` as a credential and use `--reset` to revoke and replace it if it may have been exposed;
 - do not bypass the path-root checks or expose the local config through synced/public folders;
-- remember that relative file names, settings, status and result metadata pass through the control plane, while image bytes do not.
+- remember that relative file names, settings, status and result metadata pass through the control plane, while image, video, audio and output bytes do not;
 - keep the bridge running only while remote execution is needed; each authorized cloud client can act on files inside the configured input root.
 
 The hosted control plane is intentionally bounded: it limits OAuth registrations,
