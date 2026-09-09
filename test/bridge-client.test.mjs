@@ -150,7 +150,7 @@ test("bridge pairs, stores its secret locally and polls without sending image by
 
     const pairingRequest = requests.find((entry) => entry.url === "/bridge/v1/pairings");
     assert.equal(pairingRequest.body.capabilities.imageBytesRelayed, false);
-    assert.equal(pairingRequest.body.capabilities.adapterVersion, "0.4.3");
+    assert.equal(pairingRequest.body.capabilities.adapterVersion, "0.5.0");
     assert.equal("inputFiles" in pairingRequest.body, false);
     const pollRequest = requests.find((entry) => entry.url.endsWith("/poll"));
     assert.match(pollRequest.authorization, /^Bridge dev_test\./);
