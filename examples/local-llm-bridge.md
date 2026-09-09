@@ -33,9 +33,7 @@ Prepare these product photos for Shopify:
 }
 ```
 
-For paid batch/scenario runs above the free small-batch limit, obtain an x402
-unlock token through the QuokkaPix agent payment flow and pass it as
-`unlockToken`.
-
-Single-image agent runs, single-image scenarios and small agent batches up to 5
-files are free. Larger batch and batch-scenario runs may require paid unlock.
+Run once without a token so the browser can inspect the actual files, ZIP
+contents, PDF pages or Video duration and return an exact quote. If paid, obtain
+the quoted product-specific x402 token and retry the unchanged call with
+`unlockToken`. The token is consumed only immediately before local processing.

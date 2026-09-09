@@ -277,7 +277,7 @@ Audio mix example:
 }
 ```
 
-Version 0.6.0 exposes the same Video discovery, validation and processing tools through the OAuth-protected remote MCP and paired local bridge. Remote `inputFile`, optional `musicFile` and `outputDir` values are relative to the configured roots; their bytes never pass through the control plane. Bridges older than 0.6.0 receive an explicit upgrade error for Video calls.
+Version 0.7.0 exposes the unified Image/Video payment quote and token flow through the OAuth-protected remote MCP and paired local bridge. Remote `inputFile`, optional `musicFile` and `outputDir` values are relative to the configured roots; their bytes never pass through the control plane. Paid Video bridge calls require 0.7.0 or newer.
 
 ### `process_images`
 
@@ -392,7 +392,7 @@ The hosted remote MCP endpoint also exposes:
 
 Remote `verify_unlock_token` is preflight-only and never consumes the token. Actual consumption remains inside the local browser start path.
 
-The hosted endpoint also relays all Image and Video recipe, rule, QA and processing tools listed above. Both `process_video` and `process_video_with_settings` require the OAuth `bridge:execute` scope. Video workflows do not use the Image batch x402 gate.
+The hosted endpoint also relays all Image and Video recipe, rule, QA and processing tools listed above. Both `process_video` and `process_video_with_settings` require the OAuth `bridge:execute` scope. Video uses duration/transcription products instead of the Image file/PDF products; both surfaces use the same x402 protocol.
 
 ## Official Recipes
 
@@ -569,7 +569,11 @@ Tool: `process_images`
   "recipeId": "shopify_product_pack",
   "inputFiles": [
     "/Users/me/products/photo-1.jpg",
-    "/Users/me/products/photo-2.jpg"
+    "/Users/me/products/photo-2.jpg",
+    "/Users/me/products/photo-3.jpg",
+    "/Users/me/products/photo-4.jpg",
+    "/Users/me/products/photo-5.jpg",
+    "/Users/me/products/photo-6.jpg"
   ],
   "outputDir": "/Users/me/products/out",
   "headless": true
@@ -675,7 +679,7 @@ Tool: `process_with_settings`
 }
 ```
 
-This two-file batch is inside the free small-batch limit. Add an `unlockToken` only for larger paid agent batch/scenario runs.
+This two-file batch is free. For a paid tier, first run without a token to obtain the exact local quote, then retry unchanged with its product `unlockToken`.
 
 ## Example: Metadata Cleanup
 
@@ -814,19 +818,27 @@ Those require a future semantic analyzer or another explicit measurable signal. 
 
 Human QuokkaPix UI and reward-ad flows are unchanged.
 
-Agent payment rules apply only to agent batch or batch-scenario runs above the
-free small-batch limit.
+Agent pricing is calculated from the actual media loaded into the local browser.
 
 Current policy:
 
-- single image agent run: free;
-- single image scenario: free;
-- agent batch up to 5 files: free;
-- agent batch or batch scenario from 6 to 50 files: `0.01 USDC`;
+| Surface/run | Free | Next tier | Larger tier |
+| --- | --- | --- | --- |
+| Image normal tools | 1-5 actual files | 6-25: `0.01` | 26-50: `0.02 USDC`; >50 blocked |
+| PDF | Up to 20 pages | 21-50: `0.01` | 51-300: `0.02 USDC`; >300 blocked |
+| Image multi-step scenario | - | - | `0.02 USDC` |
+| Video normal edit | Up to 5 min | >5-15: `0.01`; >15-30: `0.02` | >30: `0.03 USDC` |
+| Video transcription | Up to 5 min | >5-15: `0.02`; >15-30: `0.04` | >30-45: `0.06 USDC`; >45 blocked |
+
+ZIP contents count after local extraction. Transcription plus subtitle burn is
+one transcription-priced run, not two fees. Burning transcript segments that
+already exist uses the normal Video edit tier.
+
+- provider: Coinbase x402;
 - provider: Coinbase x402;
 - currency/networks: USDC on Base (`eip155:8453`, default), Polygon (`eip155:137`), Arbitrum (`eip155:42161`) and World Chain (`eip155:480`) when exposed by `/api/agent-payment/options`;
 - payment options endpoint: `/api/agent-payment/options`;
-- paid unlock endpoint: `/api/agent-unlock/coinbase-x402`;
+- product unlock endpoint: `/api/agent-unlock/coinbase-x402/:productId`;
 - verify endpoint: `/api/agent-unlock/verify`;
 - formal API contract: `/x402-api.md`.
 
@@ -839,17 +851,21 @@ The MCP runner can:
 
 The MCP runner does not sign x402 payments itself. An x402-capable client or wallet must obtain the `unlockToken`.
 
-Bridge mode does not add a second fee and WebMCP has no separate charge. A remote client can call `set_unlock_token` once after obtaining an x402 unlock. The control plane keeps that token only in memory, sends it to the paired bridge for one eligible run, and removes it when local processing starts. The browser payment endpoint remains the authority that consumes the unlock.
+Bridge mode does not add a second fee and WebMCP has no separate charge. A remote client can pass `unlockToken` on the retried processing call or call `set_unlock_token` with the matching usage. The control plane keeps a staged token only in memory and never consumes it. The local browser remains authoritative and consumes the token immediately before processing starts.
 
-Always call `get_payment_options` when an agent is unsure whether a run is free or paid. The live response includes `freeBatchMaxFiles`, `paidMinFiles`, `maxFiles`, `price`, `currency`, supported x402 networks and endpoint URLs.
+Always call `get_payment_options` for current products and provider availability.
+For an exact quote, run the appropriate process tool without a token. The local
+browser first expands ZIPs or reads PDF pages/Video duration and returns a quote
+without starting paid work.
 
-Paid batch workflow for 6-50 files:
+Paid workflow:
 
-1. Call `get_payment_options`.
-2. Use an x402-capable client to call `/api/agent-unlock/coinbase-x402`.
-3. Read `unlockToken` from the paid response.
-4. Optional: call `verify_unlock_token`. It is always a non-consuming preflight and uses live `scope`, `price` and `currency` unless explicitly overridden.
-5. Call `process_images` or `process_with_settings` and pass `unlockToken`.
+1. Apply settings and supply the local paths to a process tool without a token.
+2. Read the returned local quote and its `productId`/`paymentEndpoint`.
+3. Use an x402-capable client to pay that product endpoint.
+4. Read `unlockToken`; optionally call `verify_unlock_token` with matching usage.
+5. Retry the same unchanged Image or Video process call with `unlockToken`.
+6. The browser rechecks the tier and consumes the token immediately before work begins.
 
 Example:
 
@@ -888,7 +904,7 @@ Options:
 --input, --file         Input image path. Repeat for multiple files.
 --output, --output-dir  Output directory.
 --app-url               QuokkaPix URL, default https://quokkapix.com/#agent=1.
---unlock-token          Paid x402 unlock token for agent batch/scenario runs.
+--unlock-token          Product-specific x402 unlock token for a paid Image run.
 --headed                Show browser window.
 --timeout-ms            Timeout in milliseconds.
 ```
@@ -1013,9 +1029,9 @@ npx playwright install chromium
 
 Use absolute local file paths. The MCP process must have permission to read them.
 
-### Batch run says payment is required
+### A run says payment is required
 
-Single image runs, single-image scenarios and agent batches up to 5 files are free. Larger agent batch and batch-scenario runs may require a valid x402 unlock token.
+Read the returned local quote, pay its product-specific endpoint, and retry the unchanged call with the resulting `unlockToken`. Do not reuse a token for another product tier.
 
 ### Browser runs out of memory
 

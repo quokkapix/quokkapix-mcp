@@ -327,7 +327,7 @@ server.registerTool(
   {
     title: "Process local images with QuokkaPix",
     description:
-      "Process local image files through the QuokkaPix browser app using an official recipeId or a full custom recipe. The adapter opens local Chromium, applies settings, uploads files through the browser file input, starts processing, downloads the output and writes quokkapix-result.json. Source images stay in the local browser workflow and are not sent to a QuokkaPix processing API. Single-image runs and small batches up to 5 files are free; use unlockToken for larger paid batch/scenario runs.",
+      "Process local image files through the QuokkaPix browser app using an official recipeId or a full custom recipe. Source files stay local. Without unlockToken, the browser returns an exact quote after ZIP expansion/PDF inspection and before paid processing. Retry the unchanged call with the quoted product token.",
     inputSchema: {
       recipeId: z
         .string()
@@ -338,7 +338,7 @@ server.registerTool(
       inputFiles: z
         .array(localFilePathSchema)
         .min(1)
-        .describe("Local source image files to upload through the browser file input. Agent batches up to 5 files are free; the paid batch limit is 50."),
+        .describe("Local Image, supported ZIP or PDF paths uploaded through the browser file input. Actual expanded files/pages determine the quote."),
       watermarkLogoFile: localFilePathSchema
         .optional()
         .describe("Optional local logo/image file for QuokkaPix logo watermark workflows."),
@@ -350,7 +350,7 @@ server.registerTool(
       unlockToken: z
         .string()
         .optional()
-        .describe("Optional x402 unlock token for paid agent batch/scenario runs above 5 files. Obtain it outside this adapter."),
+        .describe("Optional product-specific x402 unlock token. Omit it to receive the browser-authoritative quote before paid processing."),
       headless: z.boolean().optional().describe("Run Chromium headless. Defaults to true unless debugging."),
       timeoutMs: z
         .number()
@@ -400,7 +400,7 @@ server.registerTool(
       unlockToken: z
         .string()
         .optional()
-        .describe("Optional x402 unlock token for paid agent batch/scenario runs above 5 files."),
+        .describe("Optional product-specific x402 unlock token. Omit it to receive the exact local quote first."),
       headless: z.boolean().optional().describe("Run Chromium headless. Defaults to true unless debugging."),
       timeoutMs: z
         .number()
@@ -452,7 +452,7 @@ server.registerTool("validate_video_result_manifest", {
 
 server.registerTool("process_video", {
   title: "Process one local video with QuokkaPix",
-  description: "Open the Video Editor in local Chromium, apply an official recipe, upload one local video and optional music file, process locally, save the result and write quokkapix-video-result.json. Media bytes are not sent to a QuokkaPix processing API.",
+  description: "Open Video in local Chromium and keep media local. Without unlockToken, return an exact duration/transcription quote before paid work; retry the same call with the product-specific token.",
   inputSchema: {
     recipeId: z.string().min(1).optional().describe("Official id from list_video_recipes. Provide recipeId or recipe."),
     recipe: videoRecipeSchema.optional(),
@@ -462,6 +462,7 @@ server.registerTool("process_video", {
     appUrl: appUrlSchema.describe("Optional Video app URL. Defaults to https://video.quokkapix.com/#agent=1."),
     headless: z.boolean().optional(),
     timeoutMs: z.number().int().min(10000).max(3600000).optional(),
+    unlockToken: z.string().min(16).optional().describe("Product-specific x402 unlock token. Omit it to receive a local duration-based quote before processing."),
   },
 }, async (input) => jsonResult(await processVideoWithQuokkaPix(input)));
 
@@ -477,6 +478,7 @@ server.registerTool("process_video_with_settings", {
     appUrl: appUrlSchema.describe("Optional Video app URL. Defaults to https://video.quokkapix.com/#agent=1."),
     headless: z.boolean().optional(),
     timeoutMs: z.number().int().min(10000).max(3600000).optional(),
+    unlockToken: z.string().min(16).optional().describe("Product-specific x402 unlock token. Omit it to receive a local duration-based quote before processing."),
   },
 }, async (input) => jsonResult(await processVideoWithQuokkaPix(input)));
 
@@ -485,7 +487,7 @@ server.registerTool(
   {
     title: "Get QuokkaPix agent payment options",
     description:
-      "Fetch live QuokkaPix agent payment options. Use this before any paid batch/scenario run to discover current price, currency, free single-image and small-batch rules, x402 endpoint URLs, verify endpoint and refund notes. This tool does not sign, submit or consume a payment.",
+      "Fetch live QuokkaPix Image and Video payment tiers, free limits and product-specific x402 endpoints. This tool does not sign, submit or consume a payment.",
     inputSchema: {
       baseUrl: baseUrlSchema,
     },
@@ -498,7 +500,7 @@ server.registerTool(
   {
     title: "Explain QuokkaPix x402 payment flow",
     description:
-      "Explain the current QuokkaPix x402 workflow for agents. Use this when a client needs step-by-step guidance for paid batches above the free limit: get payment options, have an x402-capable wallet/client call the paid unlock endpoint, pass unlockToken to process_images/process_with_settings, optionally verify the token, then process. This adapter can use a token but cannot sign x402 payments itself.",
+      "Explain the unified Image/PDF/Video x402 workflow: inspect locally, quote exactly, pay the product endpoint, optionally verify, then retry unchanged with unlockToken. This adapter can use a token but cannot sign x402 payments itself.",
     inputSchema: {
       baseUrl: baseUrlSchema,
     },
@@ -523,6 +525,12 @@ server.registerTool(
         .optional()
         .describe("Run mode to verify against the unlock token."),
       files: z.number().int().min(1).max(50).optional().describe("Number of files intended for the paid run."),
+      productId: z.string().optional(),
+      surface: z.enum(["image", "video"]).optional(),
+      pdfPages: z.number().int().min(0).max(300).optional(),
+      durationSeconds: z.number().min(0).optional(),
+      scenario: z.boolean().optional(),
+      transcribe: z.boolean().optional(),
     },
   },
   async (input) => jsonResult(await verifyAgentUnlockToken({ ...input, consume: false })),

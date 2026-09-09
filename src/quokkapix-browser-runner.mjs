@@ -75,6 +75,14 @@ export async function processImagesWithQuokkaPix({
     await page.locator('[data-agent="file-picker"]').setInputFiles(files);
     await page.locator('.page-shell[data-agent-status="ready"]').waitFor({ timeout: timeoutMs });
     await emitLifecycle(onLifecycle, "files_ready", { files: files.length });
+    const paymentQuote = await page.evaluate(() =>
+      typeof window.QuokkaPixAgent.getPaymentQuote === "function"
+        ? window.QuokkaPixAgent.getPaymentQuote()
+        : null,
+    );
+    if (paymentQuote && (paymentQuote.required || paymentQuote.blocked) && !unlockToken) {
+      return { ok: false, processingOk: false, paymentRequired: Boolean(paymentQuote.required), blocked: Boolean(paymentQuote.blocked), quote: paymentQuote, state: await page.evaluate(() => window.QuokkaPixAgent.getState()) };
+    }
 
     await page.evaluate(() => {
       void Promise.resolve(window.QuokkaPixAgent.start()).catch(() => {});
@@ -187,7 +195,7 @@ export function buildWorkflowFromSettings(settings, { settingsId, expectedResult
       fileUpload: "browser-file-input-or-dropzone",
       payment:
         mode === "batch"
-          ? "free up to the current small-batch limit; x402 unlock may be required for larger agent batch/scenario runs"
+          ? "tiered by actual files/PDF pages; the local browser returns an exact x402 quote before paid processing"
           : "free for single-image agent runs",
       maxFiles: Math.max(1, Number(maxFiles || (mode === "batch" ? 50 : 1)) || 1),
     },

@@ -9,7 +9,7 @@ import { validateVideoResultManifest } from "./video-qa-validator.mjs";
 
 const DEFAULT_VIDEO_APP_URL = process.env.QUOKKAPIX_VIDEO_APP_URL || "https://video.quokkapix.com/#agent=1";
 
-export async function processVideoWithQuokkaPix({ recipe, recipeId, settings, settingsId, inputFile, musicFile, outputDir, appUrl = DEFAULT_VIDEO_APP_URL, headless = true, timeoutMs = 600000, siteRoot, onLifecycle } = {}) {
+export async function processVideoWithQuokkaPix({ recipe, recipeId, settings, settingsId, inputFile, musicFile, outputDir, appUrl = DEFAULT_VIDEO_APP_URL, headless = true, timeoutMs = 600000, siteRoot, unlockToken = "", agentClient = "local-mcp", onLifecycle } = {}) {
   if (!inputFile) throw new Error("inputFile is required.");
   if (!outputDir || !String(outputDir).trim()) throw new Error("outputDir is required.");
   const sourcePath = path.resolve(String(inputFile));
@@ -22,26 +22,42 @@ export async function processVideoWithQuokkaPix({ recipe, recipeId, settings, se
     : recipe || await getVideoRecipe(recipeId, { siteRoot });
   const validation = validateVideoRecipe(workflow);
   if (!validation.valid) throw new Error(`Invalid Video recipe: ${validation.errors.join("; ")}`);
+  const requestedAudioMode = workflow.settings?.audio?.mode || "keep";
+  if (workflow.settings?.tool === "audio" && ["mix", "replace"].includes(requestedAudioMode) && !musicPath) {
+    throw new Error("musicFile is required for Video audio mix/replace.");
+  }
 
   const browser = await chromium.launch({ headless: Boolean(headless) });
   const context = await browser.newContext({ acceptDownloads: true });
   const page = await context.newPage();
   try {
     await lifecycle(onLifecycle, "browser_opening", { surface: "video", appUrl });
-    await page.goto(withAgentClient(assertAllowedAppUrl(appUrl)), { waitUntil: "domcontentloaded", timeout: timeoutMs });
+    await page.goto(withAgentClient(assertAllowedAppUrl(appUrl), agentClient), { waitUntil: "domcontentloaded", timeout: timeoutMs });
     await page.waitForFunction(() => Boolean(window.QuokkaPixVideoAgent), null, { timeout: timeoutMs });
     await page.evaluate((selected) => window.QuokkaPixVideoAgent.applyRecipe(selected), workflow);
     await page.locator('[data-agent="file-picker"]').setInputFiles(sourcePath);
     await page.locator('.page-shell[data-agent-status="ready"]').waitFor({ timeout: timeoutMs });
-
     if (musicPath) {
       const musicPicker = page.locator('[data-agent="music-file-picker"]');
       await musicPicker.waitFor({ state: "attached", timeout: timeoutMs });
       await musicPicker.setInputFiles(musicPath);
       await page.waitForFunction(() => window.QuokkaPixVideoAgent.getState().settings?.audio?.musicLoaded === true, null, { timeout: timeoutMs });
     }
-
+    const readyState = await page.evaluate(() => window.QuokkaPixVideoAgent.getState());
+    if ((readyState.tool === "transcribe" || (readyState.tool === "audio" && !["mix", "replace"].includes(readyState.settings?.audio?.mode))) && !readyState.capabilities?.sourceTracks?.hasAudio) {
+      throw new Error("The selected source has no audio track for this Video operation.");
+    }
     await lifecycle(onLifecycle, "files_ready", { surface: "video", files: 1, musicFile: Boolean(musicPath) });
+    if (unlockToken) await page.evaluate((token) => window.QuokkaPixVideoAgent.setUnlockToken(token), unlockToken);
+    const paymentQuote = await page.evaluate(() =>
+      typeof window.QuokkaPixVideoAgent.getPaymentQuote === "function"
+        ? window.QuokkaPixVideoAgent.getPaymentQuote()
+        : null,
+    );
+    if (paymentQuote && (paymentQuote.required || paymentQuote.blocked) && !unlockToken) {
+      return { ok: false, processingOk: false, paymentRequired: Boolean(paymentQuote.required), blocked: Boolean(paymentQuote.blocked), quote: paymentQuote, state: await page.evaluate(() => window.QuokkaPixVideoAgent.getState()) };
+    }
+
     await lifecycle(onLifecycle, "processing_started", { surface: "video", tool: workflow.settings?.tool || null });
     await startAndWait(page, timeoutMs);
     let manifest = await page.evaluate(() => window.QuokkaPixVideoAgent.getResultManifest());
@@ -102,7 +118,7 @@ function stamp(seconds, separator) {
   return `${String(Math.floor(total / 3600000)).padStart(2, "0")}:${String(Math.floor((total % 3600000) / 60000)).padStart(2, "0")}:${String(Math.floor((total % 60000) / 1000)).padStart(2, "0")}${separator}${String(total % 1000).padStart(3, "0")}`;
 }
 
-function withAgentClient(value) { const url = new URL(value); const params = new URLSearchParams(url.hash.slice(1)); params.set("agent", "1"); params.set("agent-client", "local-mcp"); url.hash = params.toString(); return url.toString(); }
+function withAgentClient(value, agentClient = "local-mcp") { const url = new URL(value); const params = new URLSearchParams(url.hash.slice(1)); params.set("agent", "1"); params.set("agent-client", agentClient === "bridge" ? "bridge" : "local-mcp"); url.hash = params.toString(); return url.toString(); }
 function sanitizeId(value) { return String(value || "custom_video").toLowerCase().replace(/[^a-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 80) || "custom_video"; }
 function sanitizeFileName(value) { return String(value || "quokkapix-video-output").replace(/[<>:"/\\|?*\x00-\x1F]/g, "_").replace(/^\.+$/, "quokkapix-video-output").slice(0, 180); }
 async function lifecycle(handler, event, detail) { if (typeof handler !== "function") return; try { await handler(event, detail); } catch { /* Reporting must not interrupt local processing. */ } }

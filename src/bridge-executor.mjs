@@ -101,6 +101,8 @@ async function processBridgeVideo(args, options) {
     appUrl: options.videoAppUrl,
     headless: args.headless ?? options.headless ?? true,
     timeoutMs: args.timeoutMs,
+    unlockToken: args.unlockToken,
+    agentClient: "bridge",
     onLifecycle: options.onLifecycle,
   });
   return redactLocalPaths(result, { inputRoot, outputRoot });

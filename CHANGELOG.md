@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0
+
+- Added one exact quote flow for Image file counts, expanded ZIP contents, PDF pages, Image scenarios, Video duration and Video transcription.
+- Added product-specific x402 unlocks for all paid `0.01` through `0.06 USDC` tiers.
+- Made local stdio, WebMCP and OAuth remote MCP + bridge use the same browser-authoritative pricing decision without a channel surcharge.
+- Added paid Video processing and one-charge handling for combined transcription plus subtitle burn-in.
+- Kept discovery, configuration, validation and result downloads free; unlocks are consumed only immediately before local processing starts.
+- Added compatibility fallback for sites deployed before the exact local quote runtime.
+
 ## 0.6.0
 
 - Added Video recipe, rule, QA and processing tools to the OAuth-protected remote MCP endpoint.

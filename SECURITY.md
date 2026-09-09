@@ -15,7 +15,7 @@ Set `QUOKKAPIX_ALLOW_CUSTOM_APP_URL=1` only for trusted development or staging p
 
 Do not put wallet secrets, x402 payment credentials or private media files in recipes, issue reports or public logs. Pass paid unlock tokens at runtime and treat them as short-lived credentials.
 
-Image and Video processing are available in local stdio and remote bridge modes in version 0.6.0. The remote control plane coordinates jobs but never receives source or output media bytes.
+Image and Video processing are available in local stdio and remote bridge modes. Version 0.7.0 adds the unified product-bound pricing flow. The remote control plane coordinates jobs but never receives source or output media bytes.
 
 For bridge mode:
 
