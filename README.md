@@ -2,14 +2,14 @@
 
 [![quokkapix-mcp MCP server](https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp/badges/score.svg)](https://glama.ai/mcp/servers/quokkapix/quokkapix-mcp)
 
-Local-first MCP adapter and cloud-to-local execution bridge for private QuokkaPix image workflows.
+Local-first MCP adapter for private QuokkaPix Image and Video workflows, plus the existing cloud-to-local bridge for Image.
 
-QuokkaPix MCP Runner lets AI agents process local image files with QuokkaPix by opening the QuokkaPix web app in a local browser, applying an official recipe or direct settings payload, uploading files through the browser file input, downloading the result, and writing a machine-readable `quokkapix-result.json`.
+QuokkaPix MCP Runner lets AI agents process local images and videos by opening the matching QuokkaPix browser surface, applying an official recipe or direct settings, selecting local files through the browser input, saving the output, and writing a machine-readable result manifest. Image runs write `quokkapix-result.json`; Video runs write `quokkapix-video-result.json`.
 
 It supports two compatible modes:
 
-- local `stdio` for Claude Desktop, Cursor, LM Studio/Ollama wrappers and other local MCP clients;
-- `bridge` for remote MCP clients such as Claude web, while Chromium and image processing remain on the user's computer.
+- local `stdio` for Image and Video in Claude Desktop, Cursor, LM Studio/Ollama wrappers and other local MCP clients;
+- `bridge` for remote Image MCP clients such as Claude web, while Chromium and image processing remain on the user's computer. Remote Video execution is not included in version 0.5.0.
 
 Repository: <https://github.com/quokkapix/quokkapix-mcp>
 
@@ -22,6 +22,10 @@ mcpservers.org listing: <https://mcpservers.org/servers/quokkapix/quokkapix-mcp>
 Browser compatibility matrix: <https://quokkapix.com/en/browser-compatibility/>
 
 Browser benchmark: <https://quokkapix.com/en/browser-image-processing-benchmark/>
+
+Video compatibility matrix: <https://video.quokkapix.com/browser-compatibility/>
+
+Video benchmark: <https://video.quokkapix.com/browser-video-processing-benchmark/>
 
 Quick start:
 
@@ -37,15 +41,16 @@ npx quokkapix-mcp bridge --input-root ./images --output-root ./quokkapix-output
 
 ## What This Is
 
-This package is a local automation adapter around the browser app at:
+This package is a local automation adapter around two browser surfaces:
 
 ```text
 https://quokkapix.com/#agent=1
+https://video.quokkapix.com/#agent=1
 ```
 
-The adapter uses Playwright to drive a local Chromium browser. The browser runs the same QuokkaPix editor that humans use, including the in-browser `window.QuokkaPixAgent` API.
+The adapter uses Playwright to drive local Chromium. Image uses `window.QuokkaPixAgent`; Video uses `window.QuokkaPixVideoAgent`.
 
-Image files are processed in the user's browser runtime. During normal processing, source image bytes are not uploaded to a QuokkaPix image-processing server.
+Image, video and audio files are processed in the user's browser runtime. Source media bytes are not uploaded to a QuokkaPix processing server. Local transcription may download and cache Whisper model files, but does not upload the selected media with that model request.
 
 The optional bridge mode connects outward to the QuokkaPix control plane. The remote MCP endpoint relays tool settings, relative file names, status and result metadata. It does not expose an image upload endpoint and does not relay source or output image bytes.
 
@@ -63,7 +68,7 @@ Local file paths are available only to the local MCP runner on the user's machin
 
 ## Why Use It
 
-Use this adapter when an AI agent needs to run repeatable image workflows like:
+Use this adapter when an AI agent needs repeatable media workflows like:
 
 - prepare product photos for Shopify, Amazon, or Google Merchant;
 - validate marketplace and social image outputs against sourced rule profiles;
@@ -73,6 +78,10 @@ Use this adapter when an AI agent needs to run repeatable image workflows like:
 - watermark a batch of images;
 - generate favicon and app icon packs;
 - run custom QuokkaPix settings without manually clicking the UI.
+- cut, crop, resize, convert or compress one local video;
+- extract, mute, mix or replace video audio with a local music file;
+- generate TXT, SRT or VTT transcripts locally, or burn subtitles into MP4;
+- prepare sourced YouTube, TikTok Ads and Meta Reels video profiles.
 
 The main value is privacy and low infrastructure cost: the agent gets a practical image workflow tool, while image processing remains local in the user's browser.
 
@@ -232,6 +241,43 @@ Optional input:
 ```
 
 When `ruleProfileId` is provided, the QA report includes sourced marketplace checks such as supported formats, dimensions, source type and URL. If the browser result manifest includes `outputs[].pixelQa`, the validator also evaluates supported pixel-level visual checks such as white background, subject centering, safe margins and transparent background.
+
+### Video tools
+
+- `list_video_recipes` — list official Cut, Crop, Convert, Compress, Audio and Transcribe recipes.
+- `get_video_recipe` — return one Video recipe and its expected QA.
+- `validate_video_recipe` — validate a custom Video recipe without processing media.
+- `list_video_rule_profiles` — list sourced YouTube, TikTok Ads and Meta Reels profiles.
+- `get_video_rule_profile` — return one Video profile with its official source.
+- `validate_video_result_manifest` — validate an existing `quokkapix-video-result.json`.
+- `process_video` — process one local video with an official recipe.
+- `process_video_with_settings` — process one local video with direct `QuokkaPixVideoAgent` settings.
+
+Example:
+
+```json
+{
+  "recipeId": "tiktok_vertical",
+  "inputFile": "/Users/me/video/source.mp4",
+  "outputDir": "/Users/me/video/out"
+}
+```
+
+Audio mix example:
+
+```json
+{
+  "settings": {
+    "tool": "audio",
+    "audio": { "mode": "mix", "volume": 100, "musicVolume": 35 }
+  },
+  "inputFile": "/Users/me/video/source.mp4",
+  "musicFile": "/Users/me/audio/music.wav",
+  "outputDir": "/Users/me/video/out"
+}
+```
+
+Video is currently available through local stdio MCP only. The remote MCP and bridge remain Image-only until the separate remote Video phase.
 
 ### `process_images`
 

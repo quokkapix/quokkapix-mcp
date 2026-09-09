@@ -4,6 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 
 import { processImagesWithQuokkaPix } from "./quokkapix-browser-runner.mjs";
+import { processVideoWithQuokkaPix } from "./quokkapix-video-browser-runner.mjs";
 import { getRecipe, listRecipes, validateRecipe } from "./recipe-store.mjs";
 import {
   buildQaFromRuleProfile,
@@ -18,6 +19,8 @@ import {
   verifyAgentUnlockToken,
 } from "./payment-tools.mjs";
 import { MCP_ADAPTER_VERSION } from "./version.mjs";
+import { getVideoRecipe, getVideoRuleProfile, listVideoRecipes, listVideoRuleProfiles, validateVideoRecipe } from "./video-store.mjs";
+import { validateVideoResultManifest } from "./video-qa-validator.mjs";
 
 const server = new McpServer({
   name: "quokkapix-mcp",
@@ -178,6 +181,31 @@ const resultManifestSchema = z
   })
   .catchall(z.unknown())
   .describe("QuokkaPix result manifest returned by getResultManifest() or saved as quokkapix-result.json.");
+
+const videoSettingsSchema = z
+  .object({
+    tool: z.enum(["cut", "crop", "convert", "compress", "audio", "transcribe"]),
+  })
+  .catchall(z.unknown())
+  .describe("Payload accepted by window.QuokkaPixVideoAgent.applySettings.");
+
+const videoRecipeSchema = z
+  .object({
+    id: z.string().min(1),
+    settings: videoSettingsSchema,
+    expectedResult: z.object({ status: z.string().optional(), localOnly: z.boolean().optional(), ruleProfile: z.string().optional(), qa: z.record(z.string(), z.unknown()).optional() }).catchall(z.unknown()).optional(),
+  })
+  .catchall(z.unknown())
+  .describe("QuokkaPix Video recipe with settings and optional expected-result QA.");
+
+const videoResultManifestSchema = z.object({
+  tool: z.string().optional(),
+  status: z.string(),
+  success: z.boolean().optional(),
+  localOnly: z.boolean().optional(),
+  source: z.object({ name: z.string().optional(), sizeBytes: z.number().optional(), duration: z.number().optional(), width: z.number().optional(), height: z.number().optional() }).catchall(z.unknown()).nullable().optional(),
+  outputs: z.array(z.object({ name: z.string().optional(), format: z.string().optional(), mimeType: z.string().optional(), sizeBytes: z.number().optional(), width: z.number().optional(), height: z.number().optional(), duration: z.number().optional() }).catchall(z.unknown())).optional(),
+}).catchall(z.unknown()).describe("Video result returned by QuokkaPixVideoAgent or saved as quokkapix-video-result.json.");
 
 server.registerTool(
   "list_recipes",
@@ -385,6 +413,72 @@ server.registerTool(
   },
   async (input) => jsonResult(await processImagesWithQuokkaPix({ ...input, agentClient: "local-mcp" })),
 );
+
+server.registerTool("list_video_recipes", {
+  title: "List QuokkaPix Video recipes",
+  description: "List official browser-local recipes for cutting, crop/resize, conversion, compression, audio, transcription and subtitles.",
+  inputSchema: {},
+}, async () => jsonResult(await listVideoRecipes()));
+
+server.registerTool("get_video_recipe", {
+  title: "Get QuokkaPix Video recipe",
+  description: "Return one official Video recipe, its browser settings and expected-result QA.",
+  inputSchema: { id: z.string().min(1).describe("Video recipe id from list_video_recipes.") },
+}, async ({ id }) => jsonResult(await getVideoRecipe(id)));
+
+server.registerTool("validate_video_recipe", {
+  title: "Validate QuokkaPix Video recipe",
+  description: "Validate a custom Video recipe without opening a browser or processing media.",
+  inputSchema: { recipe: videoRecipeSchema },
+}, async ({ recipe }) => jsonResult(validateVideoRecipe(recipe)));
+
+server.registerTool("list_video_rule_profiles", {
+  title: "List sourced QuokkaPix Video rule profiles",
+  description: "List official-source profiles for YouTube, TikTok Ads and Meta Reels video workflows.",
+  inputSchema: {},
+}, async () => jsonResult(await listVideoRuleProfiles()));
+
+server.registerTool("get_video_rule_profile", {
+  title: "Get sourced QuokkaPix Video rule profile",
+  description: "Return one Video profile with separate requirements, recommendations and source URL.",
+  inputSchema: { id: z.string().min(1).describe("Video rule profile id from list_video_rule_profiles.") },
+}, async ({ id }) => jsonResult(await getVideoRuleProfile(id)));
+
+server.registerTool("validate_video_result_manifest", {
+  title: "Validate QuokkaPix Video result manifest",
+  description: "Validate quokkapix-video-result.json against its browser QA and an optional Video recipe.",
+  inputSchema: { manifest: videoResultManifestSchema, recipeId: z.string().min(1).optional(), recipe: videoRecipeSchema.optional() },
+}, async ({ manifest, recipeId, recipe }) => jsonResult(validateVideoResultManifest(manifest, recipe || (recipeId ? await getVideoRecipe(recipeId) : null))));
+
+server.registerTool("process_video", {
+  title: "Process one local video with QuokkaPix",
+  description: "Open the Video Editor in local Chromium, apply an official recipe, upload one local video and optional music file, process locally, save the result and write quokkapix-video-result.json. Media bytes are not sent to a QuokkaPix processing API.",
+  inputSchema: {
+    recipeId: z.string().min(1).optional().describe("Official id from list_video_recipes. Provide recipeId or recipe."),
+    recipe: videoRecipeSchema.optional(),
+    inputFile: localFilePathSchema.describe("One local video path uploaded through the browser file input."),
+    musicFile: localFilePathSchema.optional().describe("Optional local audio/media path for mix or replace-audio recipes."),
+    outputDir: outputDirSchema,
+    appUrl: appUrlSchema.describe("Optional Video app URL. Defaults to https://video.quokkapix.com/#agent=1."),
+    headless: z.boolean().optional(),
+    timeoutMs: z.number().int().min(10000).max(1800000).optional(),
+  },
+}, async (input) => jsonResult(await processVideoWithQuokkaPix(input)));
+
+server.registerTool("process_video_with_settings", {
+  title: "Process one local video with direct QuokkaPix settings",
+  description: "Run one local video through window.QuokkaPixVideoAgent.applySettings-compatible settings, save the media or transcript output and write quokkapix-video-result.json.",
+  inputSchema: {
+    settings: videoSettingsSchema,
+    settingsId: z.string().min(1).optional(),
+    inputFile: localFilePathSchema,
+    musicFile: localFilePathSchema.optional(),
+    outputDir: outputDirSchema,
+    appUrl: appUrlSchema.describe("Optional Video app URL. Defaults to https://video.quokkapix.com/#agent=1."),
+    headless: z.boolean().optional(),
+    timeoutMs: z.number().int().min(10000).max(1800000).optional(),
+  },
+}, async (input) => jsonResult(await processVideoWithQuokkaPix(input)));
 
 server.registerTool(
   "get_payment_options",

@@ -156,14 +156,14 @@ export function assertAllowedAppUrl(appUrl = DEFAULT_APP_URL) {
   }
 
   const hostname = parsed.hostname.toLowerCase();
-  const isOfficial = parsed.protocol === "https:" && (hostname === "quokkapix.com" || hostname === "www.quokkapix.com");
+  const isOfficial = parsed.protocol === "https:" && (hostname === "quokkapix.com" || hostname === "www.quokkapix.com" || hostname === "video.quokkapix.com");
   const isLocalhost =
     (parsed.protocol === "http:" || parsed.protocol === "https:") &&
     (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "[::1]");
 
   if (!CUSTOM_APP_URL_ALLOWED && !isOfficial && !isLocalhost) {
     throw new Error(
-      "Custom appUrl is blocked for safety. Use https://quokkapix.com, localhost, 127.0.0.1, or set QUOKKAPIX_ALLOW_CUSTOM_APP_URL=1 for trusted development.",
+      "Custom appUrl is blocked for safety. Use https://quokkapix.com, https://video.quokkapix.com, localhost, 127.0.0.1, or set QUOKKAPIX_ALLOW_CUSTOM_APP_URL=1 for trusted development.",
     );
   }
   return parsed.toString();

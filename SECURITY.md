@@ -1,18 +1,21 @@
 # Security
 
-QuokkaPix MCP runs a local browser and uploads user-selected local files into that browser page. For this reason the runner blocks arbitrary `appUrl` values by default.
+QuokkaPix MCP runs a local browser and selects user-provided image, video and optional music files in that browser page. For this reason the runner blocks arbitrary `appUrl` values by default.
 
 Allowed app URLs:
 
 - `https://quokkapix.com`
 - `https://www.quokkapix.com`
+- `https://video.quokkapix.com`
 - `http://localhost`
 - `http://127.0.0.1`
 - `http://[::1]`
 
 Set `QUOKKAPIX_ALLOW_CUSTOM_APP_URL=1` only for trusted development or staging pages you control.
 
-Do not put wallet secrets, x402 payment credentials or private image files in recipes, issue reports or public logs. Pass paid unlock tokens at runtime and treat them as short-lived credentials.
+Do not put wallet secrets, x402 payment credentials or private media files in recipes, issue reports or public logs. Pass paid unlock tokens at runtime and treat them as short-lived credentials.
+
+Video processing is available in local stdio mode. Remote MCP and bridge execution remain Image-only in version 0.5.0.
 
 For bridge mode:
 

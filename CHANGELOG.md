@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+- Added local MCP processing for the QuokkaPix Video surface without changing existing Image tools.
+- Added Video recipe and sourced-rule discovery, custom Video settings, local result saving and `quokkapix-video-result.json` validation.
+- Added support for local music inputs and TXT/SRT/VTT transcript outputs.
+- Kept remote MCP and bridge execution Image-only until the separate remote Video phase.
+- Repositioned package documentation around one QuokkaPix service with Image and Video browser surfaces.
+
 ## 0.4.3
 
 - Updated vulnerable transitive URL, request-parsing and network-address dependencies before npm publication.

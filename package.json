@@ -1,9 +1,9 @@
 {
   "name": "quokkapix-mcp",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "private": false,
   "type": "module",
-  "description": "Local-first MCP adapter and cloud-to-local execution bridge for QuokkaPix image workflows.",
+  "description": "Local-first MCP adapter for QuokkaPix image and video workflows, with an image cloud-to-local bridge.",
   "license": "MIT",
   "homepage": "https://quokkapix.com/mcp-runner.html",
   "repository": {
@@ -17,6 +17,9 @@
     "mcp",
     "model-context-protocol",
     "image-processing",
+    "video-processing",
+    "video-editing",
+    "transcription",
     "browser-automation",
     "playwright",
     "local-first",
@@ -41,7 +44,7 @@
     "quokkapix-runner": "src/cli.mjs"
   },
   "scripts": {
-    "check": "node --check src/entry.mjs && node --check src/server.mjs && node --check src/cli.mjs && node --check src/bridge-cli.mjs && node --check src/bridge-client.mjs && node --check src/bridge-executor.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/rule-store.mjs && node --check src/qa-validator.mjs && node --check src/payment-tools.mjs && node --check src/version.mjs && node --test test/bridge-client.test.mjs test/payment-tools.test.mjs test/qa-validator.test.mjs test/recipe-store.test.mjs test/version.test.mjs",
+    "check": "node --check src/entry.mjs && node --check src/server.mjs && node --check src/cli.mjs && node --check src/bridge-cli.mjs && node --check src/bridge-client.mjs && node --check src/bridge-executor.mjs && node --check src/quokkapix-browser-runner.mjs && node --check src/quokkapix-video-browser-runner.mjs && node --check src/recipe-store.mjs && node --check src/rule-store.mjs && node --check src/video-store.mjs && node --check src/qa-validator.mjs && node --check src/video-qa-validator.mjs && node --check src/payment-tools.mjs && node --check src/version.mjs && node --test test/bridge-client.test.mjs test/payment-tools.test.mjs test/qa-validator.test.mjs test/recipe-store.test.mjs test/version.test.mjs",
     "test": "npm run check",
     "prepublishOnly": "npm run check && npm pack --dry-run",
     "test:e2e": "node --test test/process-images.e2e.mjs"
